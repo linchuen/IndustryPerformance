@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    status的值有 “trace”, “debug”, “info”, “warn”, “error” and “fatal”
+    status="warn" 日誌框架本身的輸出日誌級別，可以修改為debug
+    monitorInterval="5" 自動載入配置檔案的間隔時間，不低於 5秒；生產環境中修改配置檔案，是熱更新，無需重啟應用
+ -->
+<configuration status="warn" monitorInterval="5">
+    <!--
+    集中配置屬性進行管理
+    使用時通過:${name}
+    -->
+    <properties>
+        <property name="LOG_HOME">D:/logs</property>
+        <property name="FILE_NAME">project</property>
+    </properties>
+
+    <!-- 日誌處理 -->
+    <Appenders>
+        <!-- 控制檯輸出 appender，SYSTEM_OUT輸出黑色，SYSTEM_ERR輸出紅色 -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %l - %msg%n"/>
+        </Console>
+
+        <!-- 日誌檔案輸出 appender -->
+        <RollingRandomAccessFile name="RollingRandomAccessFile" fileName="${LOG_HOME}/${FILE_NAME}.log"
+                                 filePattern="${LOG_HOME}/$${date:yyyy-MM}/${FILE_NAME}-%d{yyyy-MM-dd HH-mm}-%i.log">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %l - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="20"/>
+        </RollingRandomAccessFile>
+
+        <Async name="Async">
+            <AppenderRef ref="RollingRandomAccessFile"/>
+        </Async>
+    </Appenders>
+
+    <!-- logger 定義 -->
+    <Loggers>
+        <!-- 自定義 logger 物件
+            includeLocation="false" 關閉日誌記錄的行號資訊，開啟的話會嚴重影響非同步輸出的效能
+            additivity="false" 不再繼承 rootlogger物件
+         -->
+        <AsyncLogger name="com.log" level="trace" includeLocation="false" additivity="false">
+            <AppenderRef ref="Console"/>
+        </AsyncLogger>
+        <!-- 使用 rootLogger 配置 日誌級別 level="trace" -->
+        <Root level="debug">
+            <!-- 指定日誌使用的處理器 -->
+            <AppenderRef ref="Console"/>
+            <!-- 使用非同步 appender -->
+            <AppenderRef ref="Async"/>
+        </Root>
+    </Loggers>
+</configuration>
