@@ -5,7 +5,7 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -16,5 +16,5 @@ public class Industry {
     private String id;
     private List<SubIndustry> subIndustries;
     private String industryName;
-    private Timestamp updatedTime;
+    private LocalDateTime updatedTime;
 }

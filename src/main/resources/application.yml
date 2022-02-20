@@ -3,3 +3,6 @@ spring.data:
     host: ${HOST:localhost}
     port: ${PORT:27017}
     database: ${DATABASE:IndustryPerformance}
+logging:
+  level:
+    org.springframework.data.mongodb.core.MongoTemplate: DEBUG
