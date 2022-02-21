@@ -1,6 +1,6 @@
 package cooba.IndustryPerformance;
 
-import cooba.IndustryPerformance.service.CrawlerService;
+import cooba.IndustryPerformance.service.StockService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -8,10 +8,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 public class stockTest {
     @Autowired
-    private CrawlerService crawlerService;
+    private StockService stockService;
 
     @Test
     public void Test() {
-        crawlerService.crawlStock("2330");
+        stockService.buildStockDetail("6027");
     }
 }

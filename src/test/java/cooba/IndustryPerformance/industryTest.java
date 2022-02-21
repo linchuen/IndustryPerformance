@@ -20,4 +20,9 @@ public class industryTest {
     public void buildIndustryStockDetailInfoTest() {
         industryService.buildIndustryStockDetailInfo(UrlEnum.金融.name());
     }
+
+    @Test
+    public void getIndustryGrowthTest() {
+        System.out.println(industryService.getIndustryGrowth(UrlEnum.金融.name()));
+    }
 }
