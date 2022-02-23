@@ -23,6 +23,6 @@ public class industryTest {
 
     @Test
     public void getIndustryGrowthTest() {
-        System.out.println(industryService.getIndustryGrowth(UrlEnum.金融.name()));
+        System.out.println(industryService.getIndustryGrowth(UrlEnum.電子商務.name()));
     }
 }

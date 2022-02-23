@@ -1,9 +1,10 @@
 package cooba.IndustryPerformance.service;
 
+import cooba.IndustryPerformance.database.entity.BlackList;
 import cooba.IndustryPerformance.database.entity.Industry.Stock;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
-import cooba.IndustryPerformance.database.repository.IndustryRepository;
+import cooba.IndustryPerformance.database.repository.BlackListReposiotry;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +24,7 @@ import java.util.List;
 public class CrawlerService {
 
     @Autowired
-    IndustryRepository industryRepository;
+    BlackListReposiotry blackListReposiotry;
 
     public List<SubIndustry> crawlIndustry(String siteurl) {
         List<SubIndustry> subIndustryList = new ArrayList<>();
@@ -56,6 +58,9 @@ public class CrawlerService {
         String stockurl = String.format("https://goodinfo.tw/tw/StockDetail.asp?STOCK_ID=%s", stockcode);
         try {
             Document doc = Jsoup.connect(stockurl).get();
+            Element infotable = doc.getElementsByClass("b1 p4_4 r10").get(0);
+            String industryType = infotable.select("tbody > tr:nth-child(3) > td:nth-child(2)").text();
+            String companyType = infotable.select(" tbody > tr:nth-child(4) > td:nth-child(2) > nobr").text();
             Element table = doc.getElementsByClass("b1 p4_2 r10").get(0);
             String name = table.select("tbody > tr > td:nth-child(1) > nobr > a").text().split(" ")[1];
             String price = table.select("tbody > tr:nth-child(3) > td:nth-child(1)").text();
@@ -69,11 +74,13 @@ public class CrawlerService {
             StockDetail stock = StockDetail.builder()
                     .stockcode(stockcode)
                     .name(name)
-                    .price(Float.parseFloat(price))
-                    .lastprice(Float.parseFloat(lastprice))
-                    .open(Float.parseFloat(open))
-                    .highest(Float.parseFloat(highest))
-                    .lowest(Float.parseFloat(lowest))
+                    .industryType(industryType)
+                    .companyType(companyType)
+                    .price(new BigDecimal(price))
+                    .lastprice(new BigDecimal(lastprice))
+                    .open(new BigDecimal(open))
+                    .highest(new BigDecimal(highest))
+                    .lowest(new BigDecimal(lowest))
                     .tradingVolume(Integer.parseInt(tradingVolume))
                     .tradingPiece(Integer.parseInt(tradingPiece))
                     .createdTime(LocalDate.now())
@@ -81,9 +88,14 @@ public class CrawlerService {
             log.info("爬蟲 {} {} 成功", stockcode, name);
             return stock;
         } catch (Exception e) {
-            log.warn("{}爬取失敗 ", stockcode);
-            log.error(e.getMessage());
+            log.warn("{}爬取失敗", stockcode);
+            BlackList blackList = BlackList.builder()
+                    .stockcode(stockcode)
+                    .build();
+            if (!blackListReposiotry.findByStockcode(stockcode).isPresent()) {
+                blackListReposiotry.save(blackList);
+            }
+            return null;
         }
-        return null;
     }
 }

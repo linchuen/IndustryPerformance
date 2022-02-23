@@ -3,13 +3,16 @@ package cooba.IndustryPerformance.database.entity.StockDetail;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
 @Builder
+@NoArgsConstructor
 @AllArgsConstructor
 @Document
 public class StockDetail {
@@ -17,11 +20,13 @@ public class StockDetail {
     private String id;
     private String stockcode;
     private String name;
-    private Float price;
-    private Float lastprice;
-    private Float open;
-    private Float highest;
-    private Float lowest;
+    private String industryType;
+    private String companyType;
+    private BigDecimal price;
+    private BigDecimal lastprice;
+    private BigDecimal open;
+    private BigDecimal highest;
+    private BigDecimal lowest;
     private int tradingVolume;
     private int tradingPiece;
     private LocalDate createdTime;

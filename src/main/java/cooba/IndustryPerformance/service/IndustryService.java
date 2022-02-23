@@ -4,11 +4,13 @@ import cooba.IndustryPerformance.constant.UrlEnum;
 import cooba.IndustryPerformance.database.entity.Industry.Industry;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
+import cooba.IndustryPerformance.database.repository.BlackListReposiotry;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +26,10 @@ public class IndustryService {
     IndustryRepository industryRepository;
     @Autowired
     StockService stockService;
+    @Autowired
+    BlackListReposiotry blackListReposiotry;
+    @Autowired
+    LocalcacheService localcacheService;
 
     public void biuldAllIndustryInfo() {
         UrlEnum[] urlEnums = UrlEnum.values();
@@ -68,26 +74,37 @@ public class IndustryService {
             Industry industry = industryRepository.findByIndustryName(industryType).get();
             industry.getSubIndustries()
                     .forEach(subIndustry -> subIndustry.getCompanies()
-                            .forEach(stock -> industryStockMap.put(stock.getStockcode(), stock.getName())));
+                            .forEach(stock -> {
+                                if (!localcacheService.getBlacklist().contains(stock.getStockcode())) {
+                                    industryStockMap.put(stock.getStockcode(), stock.getName());
+                                }
+                            }));
         }
         return industryStockMap;
     }
 
-    public Float getIndustryGrowth(String industryType) {
-        AtomicReference<Float> lastprice = new AtomicReference<>(Float.valueOf(0));
-        AtomicReference<Float> price = new AtomicReference<>(Float.valueOf(0));
+    public BigDecimal getIndustryGrowth(String industryType) {
+        AtomicReference<BigDecimal> lastprice = new AtomicReference<BigDecimal>(new BigDecimal(0));
+        AtomicReference<BigDecimal> price = new AtomicReference<BigDecimal>(new BigDecimal(0));
         Map<String, String> industryStockMap = getIndustryStockInfo(industryType);
         if (industryStockMap.isEmpty()) {
             log.warn("industryStockMap 為空");
             return null;
         }
-        industryStockMap.forEach((k, v) -> {
+        for (Map.Entry<String, String> entry : industryStockMap.entrySet()) {
+            String k = entry.getKey();
+            String v = entry.getValue();
             StockDetail stock = stockService.getStockDetailLast_1_Day(k)
                     .orElseGet(() -> stockService.buildStockDetail(k));
-            lastprice.updateAndGet(v1 -> v1 + stock.getLastprice());
-            price.updateAndGet(v1 -> v1 + stock.getPrice());
-        });
-        Float Growth = (price.get() - lastprice.get()) / lastprice.get();
-        return Growth;
+            if (stock == null) {
+                continue;
+            }
+            lastprice.updateAndGet(v1 -> v1.add(stock.getLastprice()));
+            price.updateAndGet(v1 -> v1.add(stock.getPrice()));
+        }
+        BigDecimal result = new BigDecimal(0);
+        BigDecimal growth = result.add(price.get()).subtract(lastprice.get()).divide(lastprice.get()).setScale(2);
+        log.info("產業:{} 漲幅:{} 今日股價:{} 昨日股價:{}", industryType, result, price.get(), lastprice.get());
+        return growth;
     }
 }
