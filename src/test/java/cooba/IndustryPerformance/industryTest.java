@@ -18,11 +18,17 @@ public class industryTest {
 
     @Test
     public void buildIndustryStockDetailInfoTest() {
-        industryService.buildIndustryStockDetailInfo(UrlEnum.金融.name());
+        industryService.buildIndustryStockDetailInfo(UrlEnum.醫療器材.name());
+    }
+
+    @Test
+    public void buildIndustryInfoTest() {
+        //industryService.biuldAllIndustryInfo();
+        industryService.buildIndustryInfo(UrlEnum.金融.name(), UrlEnum.金融.getUrl());
     }
 
     @Test
     public void getIndustryGrowthTest() {
-        System.out.println(industryService.getIndustryGrowth(UrlEnum.電子商務.name()));
+        System.out.println(industryService.getIndustryGrowth(UrlEnum.金融.name()));
     }
 }

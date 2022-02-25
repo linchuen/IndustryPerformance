@@ -8,13 +8,18 @@ import cooba.IndustryPerformance.database.repository.BlackListReposiotry;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
@@ -34,8 +39,13 @@ public class IndustryService {
     public void biuldAllIndustryInfo() {
         UrlEnum[] urlEnums = UrlEnum.values();
         for (UrlEnum urlEnum : urlEnums) {
-            buildIndustryInfo(urlEnum.name(), urlEnum.getUrl());
+            asyncBuildIndustryInfo(urlEnum.name(), urlEnum.getUrl());
         }
+    }
+
+    @Async
+    public void asyncBuildIndustryInfo(String industryType, String siteurl) {
+        buildIndustryInfo(industryType, siteurl);
     }
 
     public void buildIndustryInfo(String industryType, String siteurl) {
@@ -64,7 +74,12 @@ public class IndustryService {
             log.warn("industryStockMap 為空");
             return;
         }
-        industryStockMap.forEach((k, v) -> stockService.buildStockDetail(k));
+        List<CompletableFuture<StockDetail>> completableFutures = new ArrayList<>();
+        industryStockMap.forEach((k, v) -> {
+            completableFutures.add(CompletableFuture.supplyAsync(
+                    () -> stockService.buildStockDetail(k), Executors.newFixedThreadPool(10)));
+        });
+        CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0])).join();
         log.info("buildIndustryStockDetailInfo 成功");
     }
 
@@ -103,8 +118,8 @@ public class IndustryService {
             price.updateAndGet(v1 -> v1.add(stock.getPrice()));
         }
         BigDecimal result = new BigDecimal(0);
-        BigDecimal growth = result.add(price.get()).subtract(lastprice.get()).divide(lastprice.get()).setScale(2);
-        log.info("產業:{} 漲幅:{} 今日股價:{} 昨日股價:{}", industryType, result, price.get(), lastprice.get());
+        BigDecimal growth = result.add(price.get()).subtract(lastprice.get()).divide(lastprice.get(), 4, RoundingMode.HALF_UP);
+        log.info("產業:{} 漲幅:{} 今日股價:{} 昨日股價:{}", industryType, growth, price.get(), lastprice.get());
         return growth;
     }
 }

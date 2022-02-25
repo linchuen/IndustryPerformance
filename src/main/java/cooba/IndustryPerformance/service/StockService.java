@@ -6,6 +6,7 @@ import cooba.IndustryPerformance.database.repository.BlackListReposiotry;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -20,6 +21,11 @@ public class StockService {
     CrawlerService crawlerService;
     @Autowired
     BlackListReposiotry blackListReposiotry;
+
+    @Async("stockExecutor")
+    public StockDetail asyncBuildStockDetail(String stockcode) {
+        return buildStockDetail(stockcode);
+    }
 
     public StockDetail buildStockDetail(String stockcode) {
         StockDetail stockDetail = crawlerService.crawlStock(stockcode);
