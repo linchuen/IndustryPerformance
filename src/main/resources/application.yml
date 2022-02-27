@@ -3,6 +3,15 @@ spring.data:
     host: ${HOST:localhost}
     port: ${PORT:27017}
     database: ${DATABASE:IndustryPerformance}
+  redis:
+    database: 0
+    host: 127.0.0.1
+    port: 6379
+    pool:
+      max-idle: 8
+      min-idle: 0
+      max-active: 8
+      max-wait: -1
 logging:
   level:
     org.springframework.data.mongodb.core.MongoTemplate: DEBUG
