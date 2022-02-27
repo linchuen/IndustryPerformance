@@ -12,5 +12,7 @@ import java.util.Optional;
 public interface StockDetailRepository extends MongoRepository<StockDetail, String> {
     Optional<StockDetail> findByStockcodeAndCreatedTime(String stockcode, LocalDate localDate);
 
+    Optional<StockDetail> findByStockcodeAndCompanyTypeAndCreatedTime(String stockcode, String companyType, LocalDate localDate);
+
     List<StockDetail> findByCompanyType(String companyType);
 }

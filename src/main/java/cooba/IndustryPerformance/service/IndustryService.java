@@ -6,6 +6,7 @@ import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
 import cooba.IndustryPerformance.database.repository.BlackListReposiotry;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
+import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +34,8 @@ public class IndustryService {
     @Autowired
     StockService stockService;
     @Autowired
+    StockDetailRepository stockDetailRepository;
+    @Autowired
     BlackListReposiotry blackListReposiotry;
     @Autowired
     LocalcacheService localcacheService;
@@ -41,6 +45,10 @@ public class IndustryService {
         for (UrlEnum urlEnum : urlEnums) {
             asyncBuildIndustryInfo(urlEnum.name(), urlEnum.getUrl());
         }
+    }
+
+    public void deleteAllIndustryInfo() {
+        industryRepository.deleteAll();
     }
 
     @Async
@@ -112,6 +120,7 @@ public class IndustryService {
             StockDetail stock = stockService.getStockDetailLast_1_Day(k)
                     .orElseGet(() -> stockService.buildStockDetail(k));
             if (stock == null) {
+                log.warn("{} {}找不到資料", k, v);
                 continue;
             }
             lastprice.updateAndGet(v1 -> v1.add(stock.getLastprice()));
@@ -120,6 +129,33 @@ public class IndustryService {
         BigDecimal result = new BigDecimal(0);
         BigDecimal growth = result.add(price.get()).subtract(lastprice.get()).divide(lastprice.get(), 4, RoundingMode.HALF_UP);
         log.info("產業:{} 漲幅:{} 今日股價:{} 昨日股價:{}", industryType, growth, price.get(), lastprice.get());
+        return growth;
+    }
+
+    public BigDecimal getIndustry_n_DaysGrowth(int days, String industryType) {
+        Map<String, String> industryStockMap = getIndustryStockInfo(industryType);
+        if (industryStockMap.isEmpty()) {
+            log.warn("industryStockMap 為空");
+            return null;
+        }
+
+        AtomicReference<BigDecimal> price = new AtomicReference<BigDecimal>(new BigDecimal(0));
+        AtomicReference<BigDecimal> last_n_daysPrice = new AtomicReference<BigDecimal>(new BigDecimal(0));
+        for (Map.Entry<String, String> entry : industryStockMap.entrySet()) {
+            String k = entry.getKey();
+            String v = entry.getValue();
+            StockDetail stock = stockDetailRepository.findByStockcodeAndCreatedTime(k, LocalDate.now()).orElseGet(null);
+            StockDetail stock_n = stockDetailRepository.findByStockcodeAndCreatedTime(k, LocalDate.now().minusDays(days)).orElseGet(null);
+            if (stock == null || stock_n == null) {
+                log.warn("{} {}找不到資料", k, v);
+                continue;
+            }
+            price.updateAndGet(v1 -> v1.add(stock.getPrice()));
+            last_n_daysPrice.updateAndGet(v1 -> v1.add(stock_n.getPrice()));
+        }
+        BigDecimal result = new BigDecimal(0);
+        BigDecimal growth = result.add(price.get()).subtract(last_n_daysPrice.get()).divide(last_n_daysPrice.get(), 4, RoundingMode.HALF_UP);
+        log.info("產業:{} 漲幅:{} 今日股價:{} 昨日股價:{}", industryType, growth, price.get(), last_n_daysPrice.get());
         return growth;
     }
 }
