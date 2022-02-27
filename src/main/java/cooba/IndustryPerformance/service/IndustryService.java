@@ -85,7 +85,7 @@ public class IndustryService {
         List<CompletableFuture<StockDetail>> completableFutures = new ArrayList<>();
         industryStockMap.forEach((k, v) -> {
             completableFutures.add(CompletableFuture.supplyAsync(
-                    () -> stockService.buildStockDetail(k), Executors.newFixedThreadPool(10)));
+                    () -> stockService.buildStockDetail(k), Executors.newFixedThreadPool(20)));
         });
         CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0])).join();
         log.info("buildIndustryStockDetailInfo 成功");

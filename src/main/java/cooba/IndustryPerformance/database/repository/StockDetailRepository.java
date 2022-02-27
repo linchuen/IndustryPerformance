@@ -15,4 +15,6 @@ public interface StockDetailRepository extends MongoRepository<StockDetail, Stri
     Optional<StockDetail> findByStockcodeAndCompanyTypeAndCreatedTime(String stockcode, String companyType, LocalDate localDate);
 
     List<StockDetail> findByCompanyType(String companyType);
+
+    void deleteByCompanyType(String companyType);
 }
