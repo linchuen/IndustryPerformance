@@ -1,14 +1,15 @@
 package cooba.IndustryPerformance.service;
 
+import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.constant.UrlEnum;
 import cooba.IndustryPerformance.database.entity.Industry.Industry;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
-import cooba.IndustryPerformance.database.repository.BlackListReposiotry;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -36,9 +37,9 @@ public class IndustryService {
     @Autowired
     StockDetailRepository stockDetailRepository;
     @Autowired
-    BlackListReposiotry blackListReposiotry;
-    @Autowired
     LocalcacheService localcacheService;
+    @Autowired
+    RedisTemplate redisTemplate;
 
     public void biuldAllIndustryInfo() {
         UrlEnum[] urlEnums = UrlEnum.values();
@@ -98,7 +99,7 @@ public class IndustryService {
             industry.getSubIndustries()
                     .forEach(subIndustry -> subIndustry.getCompanies()
                             .forEach(stock -> {
-                                if (!localcacheService.getBlacklist().contains(stock.getStockcode())) {
+                                if (!redisTemplate.hasKey(RedisConstant.BLACKLIST + stock.getStockcode())) {
                                     industryStockMap.put(stock.getStockcode(), stock.getName());
                                 }
                             }));

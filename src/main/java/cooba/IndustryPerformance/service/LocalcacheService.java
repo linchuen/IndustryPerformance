@@ -1,13 +1,13 @@
 package cooba.IndustryPerformance.service;
 
-import cooba.IndustryPerformance.database.repository.BlackListReposiotry;
+import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.Set;
+import javax.annotation.PostConstruct;
 
 @Slf4j
 @Service
@@ -15,17 +15,12 @@ public class LocalcacheService {
     @Autowired
     StockDetailRepository stockDetailRepository;
     @Autowired
-    BlackListReposiotry blackListReposiotry;
+    RedisTemplate redisTemplate;
 
-    private Set<String> blacklist = new HashSet<>();
-
+    @PostConstruct
     public void init() {
         stockDetailRepository.findByCompanyType("興櫃")
-                .forEach(stockDetail -> blacklist.add(stockDetail.getStockcode()));
-        blackListReposiotry.findAll().forEach(blackList -> blacklist.add(blackList.getStockcode()));
+                .forEach(stockDetail -> redisTemplate.opsForValue().set(RedisConstant.BLACKLIST + stockDetail.getStockcode(), stockDetail.getStockcode()));
     }
 
-    public Set<String> getBlacklist() {
-        return blacklist;
-    }
 }

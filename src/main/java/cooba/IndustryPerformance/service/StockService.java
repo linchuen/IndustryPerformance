@@ -1,16 +1,17 @@
 package cooba.IndustryPerformance.service;
 
-import cooba.IndustryPerformance.database.entity.BlackList;
+import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
-import cooba.IndustryPerformance.database.repository.BlackListReposiotry;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -20,7 +21,7 @@ public class StockService {
     @Autowired
     CrawlerService crawlerService;
     @Autowired
-    BlackListReposiotry blackListReposiotry;
+    RedisTemplate redisTemplate;
 
     @Async("stockExecutor")
     public StockDetail asyncBuildStockDetail(String stockcode) {
@@ -40,12 +41,7 @@ public class StockService {
                 return stockDetail;
             } catch (Exception e) {
                 log.warn("股票代碼:{}建立失敗", stockcode);
-                BlackList blackList = BlackList.builder()
-                        .stockcode(stockcode)
-                        .build();
-                if (!blackListReposiotry.findByStockcode(stockcode).isPresent()) {
-                    blackListReposiotry.save(blackList);
-                }
+                redisTemplate.opsForValue().set(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
                 return null;
             }
         } else {

@@ -1,16 +1,16 @@
 package cooba.IndustryPerformance.service;
 
-import cooba.IndustryPerformance.database.entity.BlackList;
+import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.database.entity.Industry.Stock;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
-import cooba.IndustryPerformance.database.repository.BlackListReposiotry;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -18,13 +18,13 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
 public class CrawlerService {
-
     @Autowired
-    BlackListReposiotry blackListReposiotry;
+    RedisTemplate redisTemplate;
 
     public List<SubIndustry> crawlIndustry(String siteurl) {
         List<SubIndustry> subIndustryList = new ArrayList<>();
@@ -89,12 +89,7 @@ public class CrawlerService {
             return stock;
         } catch (Exception e) {
             log.warn("{}爬取失敗", stockcode);
-            BlackList blackList = BlackList.builder()
-                    .stockcode(stockcode)
-                    .build();
-            if (!blackListReposiotry.findByStockcode(stockcode).isPresent()) {
-                blackListReposiotry.save(blackList);
-            }
+            redisTemplate.opsForValue().set(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
             return null;
         }
     }
