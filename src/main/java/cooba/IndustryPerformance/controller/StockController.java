@@ -15,10 +15,10 @@ public class StockController {
 
     @GetMapping("stock/{stockCode}")
     public StockDetail getStockDetail(@PathVariable String stockCode) {
-        return stockService.getStockDetailLast_1_Day(stockCode)
+        return stockService.getStockDetailToday(stockCode)
                 .orElseGet(() -> stockService.buildStockDetail(stockCode));
     }
-    
+
     @DeleteMapping("stock")
     public void deleteAllStockDetail() {
         stockService.deleteAllStockDetail();

@@ -21,7 +21,7 @@ public class industryTest {
 
     @Test
     public void getIndustryStockInfoTest() {
-        industryService.getIndustryStockInfo(UrlEnum.金融.name());
+        industryService.getIndustryStockInfo(UrlEnum.水泥.name());
     }
 
     @Test

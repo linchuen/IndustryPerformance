@@ -54,8 +54,12 @@ public class StockService {
         }
     }
 
-    public Optional<StockDetail> getStockDetailLast_1_Day(String stockcode) {
+    public Optional<StockDetail> getStockDetailToday(String stockcode) {
         return stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, LocalDate.now());
+    }
+
+    public Optional<StockDetail> getStockDetailLast_n_day(int days, String stockcode) {
+        return stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, LocalDate.now().minusDays(days));
     }
 
     public void deleteAllStockDetail() {

@@ -94,7 +94,7 @@ public class IndustryService {
         List<CompletableFuture<StockDetail>> completableFutures = new ArrayList<>();
         industryStockMap.forEach((k, v) -> {
             completableFutures.add(CompletableFuture.supplyAsync(
-                    () -> stockService.buildStockDetail(k), Executors.newFixedThreadPool(10)));
+                    () -> stockService.buildStockDetail(k), Executors.newFixedThreadPool(5)));
         });
         CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0])).join();
         log.info("buildIndustryStockDetailInfo 成功");
@@ -114,6 +114,7 @@ public class IndustryService {
                 Map<String, String> industryStockMap = new HashMap<>();
                 if (industryRepository.findByIndustryName(industryType).isPresent()) {
                     Industry industry = industryRepository.findByIndustryName(industryType).get();
+                    log.info("已從mongo取得產業 {} 資訊", industryType);
                     industry.getSubIndustries()
                             .forEach(subIndustry -> subIndustry.getCompanies()
                                     .forEach(stock -> {
@@ -140,7 +141,7 @@ public class IndustryService {
         for (Map.Entry<String, String> entry : industryStockMap.entrySet()) {
             String k = entry.getKey();
             String v = entry.getValue();
-            StockDetail stock = stockService.getStockDetailLast_1_Day(k)
+            StockDetail stock = stockService.getStockDetailToday(k)
                     .orElseGet(() -> stockService.buildStockDetail(k));
             if (stock == null) {
                 log.warn("{} {}找不到資料", k, v);
