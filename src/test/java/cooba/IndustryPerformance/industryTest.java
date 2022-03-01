@@ -26,7 +26,7 @@ public class industryTest {
 
     @Test
     public void buildIndustryStockDetailInfoTest() {
-        stockService.deleteAllStockDetail();
+        //stockService.deleteAllStockDetail();
         StopWatch stopWatch = new StopWatch("Async");
         stopWatch.start();
         industryService.buildIndustryStockDetailInfo(UrlEnum.醫療器材.name());
@@ -36,7 +36,7 @@ public class industryTest {
 
     @Test
     public void buildIndustryStockDetailInfoWithoutAsyncTest() {
-        stockService.deleteAllStockDetail();
+        //stockService.deleteAllStockDetail();
         StopWatch stopWatch = new StopWatch("WithoutAsync");
         stopWatch.start();
         Map<String, String> industryStockMap = industryService.getIndustryStockInfo(UrlEnum.醫療器材.name());
