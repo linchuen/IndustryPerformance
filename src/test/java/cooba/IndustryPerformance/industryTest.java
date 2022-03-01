@@ -51,12 +51,17 @@ public class industryTest {
 
     @Test
     public void buildIndustryInfoTest() {
-        //industryService.biuldAllIndustryInfo();
-        industryService.buildIndustryInfo(UrlEnum.金融.name());
+        industryService.biuldAllIndustryInfo();
+        //industryService.buildIndustryInfo(UrlEnum.金融.name());
     }
 
     @Test
     public void getIndustryGrowthTest() {
         System.out.println(industryService.getIndustryGrowth(UrlEnum.金融.name()));
+    }
+
+    @Test
+    public void getSubIndustryGrowthTest() {
+        System.out.println(industryService.getSubIndustryGrowth(UrlEnum.金融.name(), "證券業"));
     }
 }

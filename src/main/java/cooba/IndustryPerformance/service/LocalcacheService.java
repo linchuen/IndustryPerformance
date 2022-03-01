@@ -22,18 +22,27 @@ public class LocalcacheService {
     @Autowired
     RedisTemplate redisTemplate;
 
-    public static List<String> stockcodeLock = new ArrayList<>();
+    public static List<String> industryLock = new ArrayList<>();
+    public static List<String> subindustryLock = new ArrayList<>();
 
     @PostConstruct
     public void init() {
         log.info("init");
         stockDetailRepository.findByCompanyType("興櫃")
                 .forEach(stockDetail -> redisTemplate.opsForValue().set(RedisConstant.BLACKLIST + stockDetail.getStockcode(), stockDetail.getStockcode()));
-        stockcodeLock = Arrays.stream(UrlEnum.values()).map(o -> o.name()).collect(Collectors.toList());
+        industryLock = Arrays.stream(UrlEnum.values()).map(o -> o.name()).collect(Collectors.toList());
+        subindustryLock = Arrays.stream(UrlEnum.values()).map(o -> o.name()).collect(Collectors.toList());
     }
 
-    public String getStockcodeLock(String industryType) {
-        for (String s : stockcodeLock) {
+    public String getIndustryLock(String industryType) {
+        for (String s : industryLock) {
+            if (s.equals(industryType)) return s;
+        }
+        return "";
+    }
+
+    public String getSubIndustryLock(String industryType) {
+        for (String s : subindustryLock) {
             if (s.equals(industryType)) return s;
         }
         return "";
