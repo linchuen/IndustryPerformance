@@ -10,6 +10,7 @@ import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.BoundHashOperations;
+import org.springframework.data.redis.core.BoundSetOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -69,6 +70,8 @@ public class IndustryService {
 
         subIndustryList.forEach(subIndustry -> subIndustry.getCompanies()
                 .forEach(stock -> {
+                    BoundSetOperations boundSetOperations=redisTemplate.boundSetOps(RedisConstant.INDUSTRYINFO + industryType+":"+subIndustry.getSubIndustryName());
+                    boundSetOperations.add(stock.getStockcode());
                     BoundHashOperations<String, String, Object> boundHashOperations = redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType);
                     boundHashOperations.put(stock.getStockcode(), stock.getName());
                 }));
