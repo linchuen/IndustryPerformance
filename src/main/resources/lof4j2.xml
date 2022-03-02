@@ -37,7 +37,7 @@
     <Appenders>
         <!-- 控制檯輸出 appender，SYSTEM_OUT輸出黑色，SYSTEM_ERR輸出紅色 -->
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %l%M%L - %msg%n"/>
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%20t] %-5level %F%M%L - %msg%n"/>
         </Console>
 
         <!-- 日誌檔案輸出 appender -->
