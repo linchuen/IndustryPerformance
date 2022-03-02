@@ -191,7 +191,8 @@ public class IndustryService {
         }
     }
 
-    public BigDecimal getGrowth(int days, Map<String, String> StockMap) {
+    public BigDecimal getGrowth(String industryType,int days, Map<String, String> StockMap) {
+        List<String> stocklist=new ArrayList<>();
         if (StockMap.isEmpty()) {
             log.warn("StockMap 為空");
             return null;
@@ -210,6 +211,7 @@ public class IndustryService {
                     log.warn("{} {}找不到資料", k, v);
                     continue;
                 }
+                stocklist.add(stock.getName());
                 price.updateAndGet(v1 -> v1.add(stock.getPrice()));
                 last_n_daysPrice.updateAndGet(v1 -> v1.add(stock_n.getPrice()));
             } else {
@@ -217,13 +219,14 @@ public class IndustryService {
                     log.warn("{} {}找不到資料", k, v);
                     continue;
                 }
+                stocklist.add(stock.getName());
                 price.updateAndGet(v1 -> v1.add(stock.getPrice()));
                 last_n_daysPrice.updateAndGet(v1 -> v1.add(stock.getLastprice()));
             }
         }
         BigDecimal result = new BigDecimal(0);
         BigDecimal growth = result.add(price.get()).subtract(last_n_daysPrice.get()).divide(last_n_daysPrice.get(), 4, RoundingMode.HALF_UP);
-        log.info("漲幅:{} 今日股價:{} {}日股價:{}", growth, price.get(), days, last_n_daysPrice.get());
+        log.info("產業:{} 漲幅:{} 今日股價和:{} {}日股價和:{} 列表:{}",industryType, growth, price.get(), days, last_n_daysPrice.get(),stocklist);
         return growth;
     }
 
@@ -232,8 +235,7 @@ public class IndustryService {
     }
 
     public BigDecimal getIndustry_n_DaysGrowth(int days, String industryType) {
-        BigDecimal growth = getGrowth(days, getIndustryStockInfo(industryType));
-        log.info("產業:{} 漲幅:{}", industryType, growth);
+        BigDecimal growth = getGrowth(industryType,days, getIndustryStockInfo(industryType));
         return growth;
     }
 
@@ -242,8 +244,7 @@ public class IndustryService {
     }
 
     public BigDecimal getSubIndustry_n_DaysGrowth(int days, String industryType, String subIndustryName) {
-        BigDecimal growth = getGrowth(days, getSubIndustryStockInfo(industryType, subIndustryName));
-        log.info("產業:{} 副產業:{} 漲幅:{}", industryType,subIndustryName, growth);
+        BigDecimal growth = getGrowth(subIndustryName,days, getSubIndustryStockInfo(industryType, subIndustryName));
         return growth;
     }
 }
