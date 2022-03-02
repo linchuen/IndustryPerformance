@@ -17,10 +17,6 @@ class IndustryPerformanceApplicationTests {
     @Test
     void Test() {
         StockDetail stockDetail = crawlerService.crawlStock("2330");
-        redisTemplate.opsForValue().set("test", stockDetail);
-        StockDetail restockDetail = (StockDetail) redisTemplate.opsForValue().get("test");
-        System.out.println(redisTemplate.opsForValue().get("test").getClass());
-        System.out.println(restockDetail.getName() + restockDetail.getPrice());
     }
 
 }

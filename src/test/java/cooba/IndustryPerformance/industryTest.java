@@ -34,6 +34,7 @@ public class industryTest {
         log.info("Async 耗時:{}", stopWatch.getTotalTimeSeconds());
     }
 
+    @Deprecated
     @Test
     public void buildIndustryStockDetailInfoWithoutAsyncTest() {
         //stockService.deleteAllStockDetail();
@@ -62,6 +63,6 @@ public class industryTest {
 
     @Test
     public void getSubIndustryGrowthTest() {
-        System.out.println(industryService.getSubIndustryGrowth(UrlEnum.金融.name(), "證券業"));
+        industryService.getSubIndustryInfo(UrlEnum.金融.name()).forEach(s -> industryService.getSubIndustryGrowth(UrlEnum.金融.name(),s));
     }
 }

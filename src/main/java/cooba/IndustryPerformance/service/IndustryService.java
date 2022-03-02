@@ -21,6 +21,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
@@ -53,7 +54,7 @@ public class IndustryService {
         industryRepository.deleteAll();
     }
 
-    @Async
+    @Async("industryExecutor")
     public void asyncBuildIndustryInfo(String industryType) {
         buildIndustryInfo(industryType);
     }
@@ -71,8 +72,8 @@ public class IndustryService {
                 .forEach(stock -> {
                     BoundSetOperations subIndustrySetOperations = redisTemplate.boundSetOps(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry");
                     subIndustrySetOperations.add(subIndustry.getSubIndustryName());
-                    BoundSetOperations boundSetOperations = redisTemplate.boundSetOps(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustry.getSubIndustryName());
-                    boundSetOperations.add(stock.getStockcode());
+                    BoundHashOperations<String, String, Object> subIndustryMapOperations = redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustry.getSubIndustryName());
+                    subIndustryMapOperations.put(stock.getStockcode(), stock.getName());
                     BoundHashOperations<String, String, Object> boundHashOperations = redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType);
                     boundHashOperations.put(stock.getStockcode(), stock.getName());
                 }));
@@ -107,7 +108,8 @@ public class IndustryService {
     public Map<String, String> getIndustryStockInfo(String industryType) {
         if (redisTemplate.hasKey(RedisConstant.INDUSTRYINFO + industryType)) {
             Map<String, String> industryStockMap = new HashMap<>();
-            industryStockMap = redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType).entries();
+            redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType).entries();
+
             log.info("已從redis取得產業 {} 資訊", industryType);
             return industryStockMap;
         } else {
@@ -197,7 +199,7 @@ public class IndustryService {
         AtomicReference<BigDecimal> price = new AtomicReference<BigDecimal>(new BigDecimal(0));
         AtomicReference<BigDecimal> last_n_daysPrice = new AtomicReference<BigDecimal>(new BigDecimal(0));
 
-        for (Map.Entry<String, String> entry : StockMap.entrySet()) {
+        for (Entry<String, String> entry : StockMap.entrySet()) {
             String k = entry.getKey();
             String v = entry.getValue();
 
@@ -241,7 +243,7 @@ public class IndustryService {
 
     public BigDecimal getSubIndustry_n_DaysGrowth(int days, String industryType, String subIndustryName) {
         BigDecimal growth = getGrowth(days, getSubIndustryStockInfo(industryType, subIndustryName));
-        log.info("產業:{} 漲幅:{}", industryType, growth);
+        log.info("產業:{} 副產業:{} 漲幅:{}", industryType,subIndustryName, growth);
         return growth;
     }
 }

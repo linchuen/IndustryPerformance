@@ -34,20 +34,4 @@ public class RedisConfig {
         template.setStringSerializer(stringSerializer);
         return template;
     }
-
-    @Bean
-    public LoggingRedisTemplate<String, Object> objectRedisTemplate(LettuceConnectionFactory redisConnectionFactory) {
-        Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<Object>(Object.class);
-        ObjectMapper om = new ObjectMapper();
-        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        jackson2JsonRedisSerializer.setObjectMapper(om);
-        LoggingRedisTemplate<String, Object> template = new LoggingRedisTemplate<String, Object>();
-        template.setConnectionFactory(redisConnectionFactory);
-        template.setKeySerializer(jackson2JsonRedisSerializer);
-        template.setValueSerializer(jackson2JsonRedisSerializer);
-        template.setHashKeySerializer(jackson2JsonRedisSerializer);
-        template.setHashValueSerializer(jackson2JsonRedisSerializer);
-        template.afterPropertiesSet();
-        return template;
-    }
 }
