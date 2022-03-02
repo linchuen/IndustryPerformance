@@ -74,8 +74,8 @@ public class industryTest {
 
     @Test
     public void buildIndustryInfoTest() {
-        industryService.biuldAllIndustryInfo();
-        //industryService.buildIndustryInfo(UrlEnum.金融.name());
+        //industryService.biuldAllIndustryInfo();
+        industryService.buildIndustryInfo(UrlEnum.金融.name());
     }
 
     @Test

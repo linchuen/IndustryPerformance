@@ -204,9 +204,9 @@ public class IndustryService {
             String k = entry.getKey();
             String v = entry.getValue();
 
-            StockDetail stock = stockDetailRepository.findByStockcodeAndCreatedTime(k, LocalDate.now()).orElseGet(() -> stockService.buildStockDetail(k));
+            StockDetail stock = stockService.getStockDetailToday(k).orElseGet(() -> stockService.buildStockDetail(k));
             if (days > 1) {
-                StockDetail stock_n = stockDetailRepository.findByStockcodeAndCreatedTime(k, LocalDate.now().minusDays(days)).orElseGet(null);
+                StockDetail stock_n = stockService.getStockDetailLast_n_day(k, days).orElseGet(null);
                 if (stock == null || stock_n == null) {
                     log.warn("{} {}找不到資料", k, v);
                     continue;

@@ -5,6 +5,8 @@ import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -53,12 +55,12 @@ public class StockService {
             return stockDetail;
         }
     }
-
+    @Cacheable(value="users")
     public Optional<StockDetail> getStockDetailToday(String stockcode) {
         return stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, LocalDate.now());
     }
 
-    public Optional<StockDetail> getStockDetailLast_n_day(int days, String stockcode) {
+    public Optional<StockDetail> getStockDetailLast_n_day(String stockcode,int days) {
         return stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, LocalDate.now().minusDays(days));
     }
 
