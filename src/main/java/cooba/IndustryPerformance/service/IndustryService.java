@@ -170,7 +170,7 @@ public class IndustryService {
             log.info("已從redis取得副產業 {} {} 資訊", industryType, subIndustryName);
             return redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName).entries();
         } else {
-            synchronized (localcacheService.getSubIndustryLock(industryType,subIndustryName)) {
+            synchronized (localcacheService.getSubIndustryLock(subIndustryName)) {
                 if (redisTemplate.hasKey(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName)) {
                     log.info("已從mongo新增redis並取得副產業 {} {} 資訊", industryType, subIndustryName);
                     return redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName).entries();

@@ -23,7 +23,7 @@ public class LocalcacheService {
     RedisTemplate redisTemplate;
 
     public static List<String> industryLock = new ArrayList<>();
-    public static Map<String, Set<String>> subindustryLock = new ArrayList<>();
+    public static List<String> subindustryLock = new ArrayList<>();
     public static List<String> stockcodeLock=new ArrayList<>();
 
     @PostConstruct
@@ -32,7 +32,11 @@ public class LocalcacheService {
         stockDetailRepository.findByCompanyType("興櫃")
                 .forEach(stockDetail -> redisTemplate.opsForValue().set(RedisConstant.BLACKLIST + stockDetail.getStockcode(), stockDetail.getStockcode()));
         industryLock = Arrays.stream(UrlEnum.values()).map(o -> o.name()).collect(Collectors.toList());
-        subindustryLock = Arrays.stream(UrlEnum.values()).map(o -> o.name()).collect(Collectors.toMap(k->k, v->industryService.getSubIndustryInfo(v)));
+        for (UrlEnum urlEnum:UrlEnum.values()) {
+            for (String s:industryService.getSubIndustryInfo(urlEnum.name())){
+                subindustryLock.add(s);
+            }
+        }
         stockcodeLock= Arrays.stream(UrlEnum.values()).map(o -> o.name()).collect(Collectors.toList());
     }
 
@@ -43,21 +47,15 @@ public class LocalcacheService {
         return "";
     }
 
-    public String getSubIndustryLock(String industryType, String subIndustryName) {
-        for (Map.Entry<String, Set<String>> entry:subindustryLock.entrySet()){
-            if(entry.getValue().equals(industryType)){
-                for (String s:entry.getValue()){
-                    if(s.equals(subIndustryName)){
-                        return s;
-                    }
-                }
-            };
+    public String getSubIndustryLock(String subIndustryName) {
+        for (String s : industryLock) {
+            if (s.equals(subIndustryName)) return s;
         }
         return "";
     }
 
     public String getStockcodeLock(String stockcode) {
-        for (String s : stockcodeLock) {
+        for (String s : subindustryLock) {
             if (s.equals(stockcode)) return s;
         }
         return "";
