@@ -62,12 +62,15 @@ public class StockService {
     public Optional<StockDetail> getStockDetailLast_n_day(String stockcode,int days) {
         LocalDate localDate=LocalDate.now().minusDays(days);
         if(redisTemplate.hasKey(RedisConstant.STOCKDETAIL+localDate.toString()+":"+stockcode)){
+            log.info("已從redis取得股票 {} 資訊", stockcode);
             return Optional.of((StockDetail)redisTemplate.boundValueOps(RedisConstant.STOCKDETAIL+LocalDate.now().toString()+":"+stockcode).get());
         }else{
             synchronized (localcacheService.getStockcodeLock(stockcode)){
                 if(redisTemplate.hasKey(RedisConstant.STOCKDETAIL+localDate.toString()+":"+stockcode)){
+                    log.info("已從mongo新增redis並取得股票 {} 資訊", stockcode);
                     return Optional.of((StockDetail)redisTemplate.boundValueOps(RedisConstant.STOCKDETAIL+localDate.toString()+":"+stockcode).get());
                 }else{
+                    log.info("已從mongo取得股票 {} 資訊", stockcode);
                     return stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, localDate);
                 }
             }

@@ -2,6 +2,8 @@ package cooba.IndustryPerformance.service;
 
 import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.constant.UrlEnum;
+import cooba.IndustryPerformance.database.entity.Industry.Industry;
+import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +12,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -21,13 +24,13 @@ public class LocalcacheService {
     @Autowired
     IndustryRepository industryRepository;
     @Autowired
-    IndustryService industryService;
+    CrawlerService crawlerService;
     @Autowired
     RedisTemplate redisTemplate;
 
     public static List<String> industryLock = new ArrayList<>();
     public static List<String> subindustryLock = new ArrayList<>();
-    public static List<String> stockcodeLock=new ArrayList<>();
+    public static List<String> stockcodeLock = new ArrayList<>();
 
     @PostConstruct
     public void init() {
@@ -35,14 +38,26 @@ public class LocalcacheService {
         stockDetailRepository.findByCompanyType("興櫃")
                 .forEach(stockDetail -> redisTemplate.opsForValue().set(RedisConstant.BLACKLIST + stockDetail.getStockcode(), stockDetail.getStockcode()));
         industryLock = Arrays.stream(UrlEnum.values()).map(o -> o.name()).collect(Collectors.toList());
-        for (UrlEnum urlEnum:UrlEnum.values()) {
-            if (!industryRepository.findByIndustryName(urlEnum.name()).isPresent()){
-                industryService.buildIndustryInfo(urlEnum.name());
+        for (UrlEnum urlEnum : UrlEnum.values()) {
+            if (!industryRepository.findByIndustryName(urlEnum.name()).isPresent()) {
+                List<SubIndustry> subIndustryList = crawlerService.crawlIndustry(urlEnum.getUrl());
+                Industry industry = Industry.builder()
+                        .industryName(urlEnum.name())
+                        .subIndustries(subIndustryList)
+                        .updatedTime(LocalDateTime.now())
+                        .build();
+                industryRepository.save(industry);
+                industry.getSubIndustries().forEach(subIndustry -> {
+                    subindustryLock.add(subIndustry.getSubIndustryName());
+                    subIndustry.getCompanies().forEach(stock -> stockcodeLock.add(stock.getStockcode()));
+                });
+            }else{
+                Industry industry = industryRepository.findByIndustryName(urlEnum.name()).get();
+                industry.getSubIndustries().forEach(subIndustry -> {
+                    subindustryLock.add(subIndustry.getSubIndustryName());
+                    subIndustry.getCompanies().forEach(stock -> stockcodeLock.add(stock.getStockcode()));
+                });
             }
-            for (String s:industryService.getSubIndustryInfo(urlEnum.name())){
-                subindustryLock.add(s);
-            }
-            industryService.getIndustryStockInfo(urlEnum.name()).entrySet().forEach(entry->stockcodeLock.add(entry.getKey()));
         }
     }
 
@@ -65,5 +80,15 @@ public class LocalcacheService {
             if (s.equals(stockcode)) return s;
         }
         return "";
+    }
+
+    public List<String> updateStockcodeLockList(List<String> oldStockcodeLockList,List<String> newStockcodeLockList) {
+        oldStockcodeLockList.clear();
+        oldStockcodeLockList.addAll(newStockcodeLockList);
+        return oldStockcodeLockList;
+    }
+
+    public List<String> getStockcodeLockList() {
+        return stockcodeLock;
     }
 }

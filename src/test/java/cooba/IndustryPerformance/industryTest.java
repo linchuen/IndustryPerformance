@@ -28,7 +28,7 @@ public class industryTest {
     @Test
     public void getIndustryStockInfoTest() throws InterruptedException {
         StopWatch stopWatch = new StopWatch("IndustryStockInfo");
-        redisTemplate.delete(RedisConstant.INDUSTRYINFO + UrlEnum.交通航運.name());
+        //redisTemplate.delete(RedisConstant.INDUSTRYINFO + UrlEnum.交通航運.name());
         stopWatch.start("多執行緒測試");
         for (int i=0;i<50;i++){
             CompletableFuture.supplyAsync(() -> industryService.getIndustryStockInfo(UrlEnum.交通航運.name()), Executors.newFixedThreadPool(5));
@@ -36,12 +36,12 @@ public class industryTest {
             Thread.sleep(1);
         }
         stopWatch.stop();
-        redisTemplate.delete(RedisConstant.INDUSTRYINFO + UrlEnum.交通航運.name());
-        /*stopWatch.start("單執行緒測試");
+        //redisTemplate.delete(RedisConstant.INDUSTRYINFO + UrlEnum.交通航運.name());
+        stopWatch.start("單執行緒測試");
         for (int i=0;i<100;i++){
             industryService.getIndustryStockInfo(UrlEnum.交通航運.name());
         }
-        stopWatch.stop();*/
+        stopWatch.stop();
         Thread.sleep(1000);
         log.info(stopWatch.prettyPrint());
     }
