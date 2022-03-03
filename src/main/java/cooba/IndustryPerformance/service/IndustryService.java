@@ -61,8 +61,6 @@ public class IndustryService {
 
     public void buildIndustryInfo(String industryType) {
         String siteurl = UrlEnum.valueOf(industryType).getUrl();
-        List<String> oldStockcodeLockList=localcacheService.getStockcodeLockList();
-        List<String> newStockcodeLockList=new ArrayList<>();
         List<SubIndustry> subIndustryList = crawlerService.crawlIndustry(siteurl);
         Industry industry = Industry.builder()
                 .industryName(industryType)
@@ -72,7 +70,6 @@ public class IndustryService {
 
         subIndustryList.forEach(subIndustry -> subIndustry.getCompanies()
                 .forEach(stock -> {
-                    newStockcodeLockList.add(stock.getStockcode());
                     BoundSetOperations subIndustrySetOperations = redisTemplate.boundSetOps(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry");
                     subIndustrySetOperations.add(subIndustry.getSubIndustryName());
                     BoundHashOperations<String, String, Object> subIndustryMapOperations = redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustry.getSubIndustryName());
@@ -80,7 +77,6 @@ public class IndustryService {
                     BoundHashOperations<String, String, Object> boundHashOperations = redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType);
                     boundHashOperations.put(stock.getStockcode(), stock.getName());
                 }));
-        localcacheService.updateStockcodeLockList(oldStockcodeLockList,newStockcodeLockList);
 
         if (!industryRepository.findByIndustryName(industryType).isPresent()) {
             industryRepository.save(industry);

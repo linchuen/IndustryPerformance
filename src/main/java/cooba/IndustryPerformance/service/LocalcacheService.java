@@ -3,6 +3,7 @@ package cooba.IndustryPerformance.service;
 import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.constant.UrlEnum;
 import cooba.IndustryPerformance.database.entity.Industry.Industry;
+import cooba.IndustryPerformance.database.entity.Industry.Stock;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
@@ -30,7 +31,7 @@ public class LocalcacheService {
 
     public static List<String> industryLock = new ArrayList<>();
     public static List<String> subindustryLock = new ArrayList<>();
-    public static List<String> stockcodeLock = new ArrayList<>();
+    public static Map<String,List<String>> stockcodeLock = new HashMap<String, List<String>>();
 
     @PostConstruct
     public void init() {
@@ -49,13 +50,13 @@ public class LocalcacheService {
                 industryRepository.save(industry);
                 industry.getSubIndustries().forEach(subIndustry -> {
                     subindustryLock.add(subIndustry.getSubIndustryName());
-                    subIndustry.getCompanies().forEach(stock -> stockcodeLock.add(stock.getStockcode()));
+                    stockcodeLock.put(urlEnum.name(),subIndustry.getCompanies().stream().map(stock->stock.getStockcode()).collect(Collectors.toList()));
                 });
             }else{
                 Industry industry = industryRepository.findByIndustryName(urlEnum.name()).get();
                 industry.getSubIndustries().forEach(subIndustry -> {
                     subindustryLock.add(subIndustry.getSubIndustryName());
-                    subIndustry.getCompanies().forEach(stock -> stockcodeLock.add(stock.getStockcode()));
+                    stockcodeLock.put(urlEnum.name(),subIndustry.getCompanies().stream().map(stock->stock.getStockcode()).collect(Collectors.toList()));
                 });
             }
         }
@@ -76,19 +77,22 @@ public class LocalcacheService {
     }
 
     public String getStockcodeLock(String stockcode) {
-        for (String s : stockcodeLock) {
-            if (s.equals(stockcode)) return s;
+        for (Map.Entry Lockindustry : stockcodeLock.entrySet()) {
+            for(String lockStcokCode:(List<String>)Lockindustry.getValue()){
+                if(lockStcokCode.equals(stockcode)){
+                    return lockStcokCode;
+                }
+            }
         }
         return "";
     }
 
-    public List<String> updateStockcodeLockList(List<String> oldStockcodeLockList,List<String> newStockcodeLockList) {
-        oldStockcodeLockList.clear();
-        oldStockcodeLockList.addAll(newStockcodeLockList);
-        return oldStockcodeLockList;
+    public Map<String,List<String>> updateStockcodeLockMap(String industryType,Map<String,List<String>> oldStockcodeLockMap,List<String> newStockcodeLockList) {
+        oldStockcodeLockMap.computeIfPresent(industryType,(k,v)->v=newStockcodeLockList);
+        return oldStockcodeLockMap;
     }
 
-    public List<String> getStockcodeLockList() {
+    public Map<String,List<String>> getStockcodeLockList() {
         return stockcodeLock;
     }
 }
