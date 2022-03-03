@@ -23,6 +23,8 @@ public class StockService {
     @Autowired
     CrawlerService crawlerService;
     @Autowired
+    LocalcacheService localcacheService;
+    @Autowired
     RedisTemplate redisTemplate;
 
     @Async("stockExecutor")
@@ -31,15 +33,15 @@ public class StockService {
     }
 
     public StockDetail buildStockDetail(String stockcode) {
-        StockDetail stockDetail = crawlerService.crawlStock(stockcode);
-        if (stockDetail == null) {
-            return null;
-        }
-
         if (!stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, LocalDate.now()).isPresent()) {
+            StockDetail stockDetail = crawlerService.crawlStock(stockcode);
+            if (stockDetail == null) {
+                return null;
+            }
             try {
                 stockDetailRepository.save(stockDetail);
                 log.info("股票代碼:{}成功建立", stockcode);
+                redisTemplate.opsForValue().set(RedisConstant.STOCKDETAIL+LocalDate.now().toString()+":"+stockcode,stockDetail, 90, TimeUnit.DAYS);
                 return stockDetail;
             } catch (Exception e) {
                 log.warn("股票代碼:{}建立失敗", stockcode);
@@ -48,20 +50,28 @@ public class StockService {
             }
         } else {
             StockDetail oldstockDetail = stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, LocalDate.now()).get();
-            log.info("股票代碼:{}已經存在 ,\n舊資料:{}\n新資料:{}", stockcode, oldstockDetail, stockDetail);
-            stockDetail.setId(oldstockDetail.getId());
-            stockDetailRepository.save(stockDetail);
-            log.info("股票代碼:{}成功更新", stockcode);
-            return stockDetail;
+            log.info("股票代碼:{}已經存在 ,舊資料:{}", stockcode, oldstockDetail);
+            return oldstockDetail;
         }
     }
-    @Cacheable(value="users")
+
     public Optional<StockDetail> getStockDetailToday(String stockcode) {
-        return stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, LocalDate.now());
+        return getStockDetailLast_n_day(stockcode,0);
     }
 
     public Optional<StockDetail> getStockDetailLast_n_day(String stockcode,int days) {
-        return stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, LocalDate.now().minusDays(days));
+        LocalDate localDate=LocalDate.now().minusDays(days);
+        if(redisTemplate.hasKey(RedisConstant.STOCKDETAIL+localDate.toString()+":"+stockcode)){
+            return Optional.of((StockDetail)redisTemplate.boundValueOps(RedisConstant.STOCKDETAIL+LocalDate.now().toString()+":"+stockcode).get());
+        }else{
+            synchronized (localcacheService.getStockcodeLock(stockcode)){
+                if(redisTemplate.hasKey(RedisConstant.STOCKDETAIL+localDate.toString()+":"+stockcode)){
+                    return Optional.of((StockDetail)redisTemplate.boundValueOps(RedisConstant.STOCKDETAIL+localDate.toString()+":"+stockcode).get());
+                }else{
+                    return stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, localDate);
+                }
+            }
+        }
     }
 
     public void deleteAllStockDetail() {

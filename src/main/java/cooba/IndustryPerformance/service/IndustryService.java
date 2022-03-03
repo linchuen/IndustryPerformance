@@ -10,6 +10,8 @@ import cooba.IndustryPerformance.database.repository.IndustryRepository;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.BoundSetOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -142,7 +144,7 @@ public class IndustryService {
             log.info("已從redis取得副產業 {} 類別資訊", industryType);
             return redisTemplate.boundSetOps(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry").members();
         } else {
-            synchronized (localcacheService.getSubIndustryLock(industryType)) {
+            synchronized (localcacheService.getIndustryLock(industryType)) {
                 if (redisTemplate.hasKey(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry")) {
                     log.info("已從mongo新增redis並取得副產業 {} 類別資訊", industryType);
                     return redisTemplate.boundSetOps(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry").members();
@@ -168,7 +170,7 @@ public class IndustryService {
             log.info("已從redis取得副產業 {} {} 資訊", industryType, subIndustryName);
             return redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName).entries();
         } else {
-            synchronized (localcacheService.getSubIndustryLock(industryType)) {
+            synchronized (localcacheService.getSubIndustryLock(industryType,subIndustryName)) {
                 if (redisTemplate.hasKey(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName)) {
                     log.info("已從mongo新增redis並取得副產業 {} {} 資訊", industryType, subIndustryName);
                     return redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName).entries();
