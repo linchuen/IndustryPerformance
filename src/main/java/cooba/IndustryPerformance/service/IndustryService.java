@@ -39,8 +39,6 @@ public class IndustryService {
     @Autowired
     StockService stockService;
     @Autowired
-    StockDetailRepository stockDetailRepository;
-    @Autowired
     LocalcacheService localcacheService;
     @Autowired
     RedisTemplate redisTemplate;

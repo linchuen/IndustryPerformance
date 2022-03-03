@@ -2,6 +2,7 @@ package cooba.IndustryPerformance.service;
 
 import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.constant.UrlEnum;
+import cooba.IndustryPerformance.database.repository.IndustryRepository;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,8 @@ public class LocalcacheService {
     @Autowired
     StockDetailRepository stockDetailRepository;
     @Autowired
+    IndustryRepository industryRepository;
+    @Autowired
     IndustryService industryService;
     @Autowired
     RedisTemplate redisTemplate;
@@ -33,11 +36,14 @@ public class LocalcacheService {
                 .forEach(stockDetail -> redisTemplate.opsForValue().set(RedisConstant.BLACKLIST + stockDetail.getStockcode(), stockDetail.getStockcode()));
         industryLock = Arrays.stream(UrlEnum.values()).map(o -> o.name()).collect(Collectors.toList());
         for (UrlEnum urlEnum:UrlEnum.values()) {
+            if (!industryRepository.findByIndustryName(urlEnum.name()).isPresent()){
+                industryService.buildIndustryInfo(urlEnum.name());
+            }
             for (String s:industryService.getSubIndustryInfo(urlEnum.name())){
                 subindustryLock.add(s);
             }
+            industryService.getIndustryStockInfo(urlEnum.name()).entrySet().forEach(entry->stockcodeLock.add(entry.getKey()));
         }
-        stockcodeLock= Arrays.stream(UrlEnum.values()).map(o -> o.name()).collect(Collectors.toList());
     }
 
     public String getIndustryLock(String industryType) {
@@ -55,7 +61,7 @@ public class LocalcacheService {
     }
 
     public String getStockcodeLock(String stockcode) {
-        for (String s : subindustryLock) {
+        for (String s : stockcodeLock) {
             if (s.equals(stockcode)) return s;
         }
         return "";
