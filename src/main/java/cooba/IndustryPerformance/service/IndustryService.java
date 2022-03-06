@@ -121,7 +121,6 @@ public class IndustryService {
         if (redisTemplate.hasKey(RedisConstant.INDUSTRYINFO + industryType)) {
             log.info("已從redis取得產業 {} 資訊", industryType);
             return redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType).entries();
-            ;
         } else {
             synchronized (localcacheService.getIndustryLock(industryType)) {
                 if (redisTemplate.hasKey(RedisConstant.INDUSTRYINFO + industryType)) {
