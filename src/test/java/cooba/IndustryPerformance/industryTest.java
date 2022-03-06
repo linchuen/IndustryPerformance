@@ -56,7 +56,7 @@ public class industryTest {
         //stockService.deleteAllStockDetail();
         StopWatch stopWatch = new StopWatch("Async");
         stopWatch.start();
-        CompletableFuture.runAsync(() -> industryService.buildIndustryStockDetailInfo(UrlEnum.金融.name()));
+        CompletableFuture.runAsync(() -> industryService.buildIndustryStockDetailInfo(UrlEnum.金融.name())).join();
         stopWatch.stop();
         log.info("Async 耗時:{}", stopWatch.getTotalTimeSeconds());
     }

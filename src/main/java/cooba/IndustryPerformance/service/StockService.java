@@ -41,6 +41,9 @@ public class StockService {
                 log.info("股票代碼:{}成功建立", stockcode);
                 redisTemplate.opsForValue().set(RedisConstant.STOCKDETAIL + LocalDate.now().toString() + ":" + stockcode, stockDetail, 90, TimeUnit.DAYS);
                 return stockDetail;
+            } catch (ClassCastException classCastException) {
+                log.warn("股票代碼:{} redis 建立失敗", stockcode);
+                return stockDetail;
             } catch (Exception e) {
                 log.warn("股票代碼:{}建立失敗", stockcode);
                 redisTemplate.opsForValue().set(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
