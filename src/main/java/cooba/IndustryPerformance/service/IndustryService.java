@@ -119,11 +119,9 @@ public class IndustryService {
 
     public Map<String, String> getIndustryStockInfo(String industryType) {
         if (redisTemplate.hasKey(RedisConstant.INDUSTRYINFO + industryType)) {
-            Map<String, String> industryStockMap = new HashMap<>();
-            redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType).entries();
-
             log.info("已從redis取得產業 {} 資訊", industryType);
-            return industryStockMap;
+            return redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType).entries();
+            ;
         } else {
             synchronized (localcacheService.getIndustryLock(industryType)) {
                 if (redisTemplate.hasKey(RedisConstant.INDUSTRYINFO + industryType)) {
