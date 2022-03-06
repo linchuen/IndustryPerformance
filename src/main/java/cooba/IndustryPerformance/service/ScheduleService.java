@@ -15,12 +15,11 @@ public class ScheduleService {
         industryService.biuldAllIndustryInfo();
     }
 
-    @Scheduled(cron = "0 0 0 1 1-12 *")
+    @Scheduled(cron = "0 0 10  * * *")
     private void buildIndustryStockDetailInfo() throws InterruptedException {
         for (UrlEnum urlEnum : UrlEnum.values()) {
             industryService.buildIndustryStockDetailInfo(urlEnum.name());
             Thread.sleep(5 * 60 * 1000);
         }
     }
-
 }

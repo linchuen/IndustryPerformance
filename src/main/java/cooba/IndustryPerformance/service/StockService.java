@@ -5,8 +5,6 @@ import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -41,7 +39,7 @@ public class StockService {
             try {
                 stockDetailRepository.save(stockDetail);
                 log.info("股票代碼:{}成功建立", stockcode);
-                redisTemplate.opsForValue().set(RedisConstant.STOCKDETAIL+LocalDate.now().toString()+":"+stockcode,stockDetail, 90, TimeUnit.DAYS);
+                redisTemplate.opsForValue().set(RedisConstant.STOCKDETAIL + LocalDate.now().toString() + ":" + stockcode, stockDetail, 90, TimeUnit.DAYS);
                 return stockDetail;
             } catch (Exception e) {
                 log.warn("股票代碼:{}建立失敗", stockcode);
@@ -56,20 +54,20 @@ public class StockService {
     }
 
     public Optional<StockDetail> getStockDetailToday(String stockcode) {
-        return getStockDetailLast_n_day(stockcode,0);
+        return getStockDetailLast_n_day(stockcode, 0);
     }
 
-    public Optional<StockDetail> getStockDetailLast_n_day(String stockcode,int days) {
-        LocalDate localDate=LocalDate.now().minusDays(days);
-        if(redisTemplate.hasKey(RedisConstant.STOCKDETAIL+localDate.toString()+":"+stockcode)){
+    public Optional<StockDetail> getStockDetailLast_n_day(String stockcode, int days) {
+        LocalDate localDate = LocalDate.now().minusDays(days);
+        if (redisTemplate.hasKey(RedisConstant.STOCKDETAIL + localDate.toString() + ":" + stockcode)) {
             log.info("已從redis取得股票 {} 資訊", stockcode);
-            return Optional.of((StockDetail)redisTemplate.boundValueOps(RedisConstant.STOCKDETAIL+LocalDate.now().toString()+":"+stockcode).get());
-        }else{
-            synchronized (localcacheService.getStockcodeLock(stockcode)){
-                if(redisTemplate.hasKey(RedisConstant.STOCKDETAIL+localDate.toString()+":"+stockcode)){
+            return Optional.of((StockDetail) redisTemplate.boundValueOps(RedisConstant.STOCKDETAIL + LocalDate.now().toString() + ":" + stockcode).get());
+        } else {
+            synchronized (localcacheService.getStockcodeLock(stockcode)) {
+                if (redisTemplate.hasKey(RedisConstant.STOCKDETAIL + localDate.toString() + ":" + stockcode)) {
                     log.info("已從mongo新增redis並取得股票 {} 資訊", stockcode);
-                    return Optional.of((StockDetail)redisTemplate.boundValueOps(RedisConstant.STOCKDETAIL+localDate.toString()+":"+stockcode).get());
-                }else{
+                    return Optional.of((StockDetail) redisTemplate.boundValueOps(RedisConstant.STOCKDETAIL + localDate.toString() + ":" + stockcode).get());
+                } else {
                     log.info("已從mongo取得股票 {} 資訊", stockcode);
                     return stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, localDate);
                 }

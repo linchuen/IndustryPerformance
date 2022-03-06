@@ -7,11 +7,8 @@ import cooba.IndustryPerformance.database.entity.Industry.Stock;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
-import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.BoundSetOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -20,12 +17,12 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -42,6 +39,8 @@ public class IndustryService {
     LocalcacheService localcacheService;
     @Autowired
     RedisTemplate redisTemplate;
+
+    private static Integer FAILRATESTANDARD = 70;
 
     public void biuldAllIndustryInfo() {
         UrlEnum[] urlEnums = UrlEnum.values();
@@ -92,6 +91,7 @@ public class IndustryService {
 
     public void buildIndustryStockDetailInfo(String industryType) {
         Map<String, String> industryStockMap = getIndustryStockInfo(industryType);
+        AtomicInteger failCount = new AtomicInteger(0);
         if (industryStockMap.isEmpty()) {
             log.warn("industryStockMap 為空");
             return;
@@ -99,9 +99,21 @@ public class IndustryService {
         List<CompletableFuture<StockDetail>> completableFutures = new ArrayList<>();
         industryStockMap.forEach((k, v) -> {
             completableFutures.add(CompletableFuture.supplyAsync(
-                    () -> stockService.buildStockDetail(k), Executors.newFixedThreadPool(5)));
+                    () -> {
+                        StockDetail stockDetail = stockService.buildStockDetail(k);
+                        if (stockDetail == null) {
+                            failCount.incrementAndGet();
+                        }
+                        return stockDetail;
+                    }, Executors.newFixedThreadPool(5)));
         });
         CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0])).join();
+        int failrate = 100 * failCount.get() / industryStockMap.size();
+        if (failrate > FAILRATESTANDARD) {
+            log.warn("buildIndustryStockDetailInfo > 70% 產業: {}", industryType);
+            crawlerService.changeSource();
+            redisTemplate.delete(RedisConstant.BLACKLIST + "*");
+        }
         log.info("buildIndustryStockDetailInfo 成功");
     }
 
@@ -191,8 +203,8 @@ public class IndustryService {
         }
     }
 
-    public BigDecimal getGrowth(String industryType,int days, Map<String, String> StockMap) {
-        List<String> stocklist=new ArrayList<>();
+    public BigDecimal getGrowth(String industryType, int days, Map<String, String> StockMap) {
+        List<String> stocklist = new ArrayList<>();
         if (StockMap.isEmpty()) {
             log.warn("StockMap 為空");
             return null;
@@ -226,7 +238,7 @@ public class IndustryService {
         }
         BigDecimal result = new BigDecimal(0);
         BigDecimal growth = result.add(price.get()).subtract(last_n_daysPrice.get()).divide(last_n_daysPrice.get(), 4, RoundingMode.HALF_UP);
-        log.info("產業:{} 漲幅:{} 今日股價和:{} {}日股價和:{} 列表:{}",industryType, growth, price.get(), days, last_n_daysPrice.get(),stocklist);
+        log.info("產業:{} 漲幅:{} 今日股價和:{} {}日股價和:{} 列表:{}", industryType, growth, price.get(), days, last_n_daysPrice.get(), stocklist);
         return growth;
     }
 
@@ -235,7 +247,7 @@ public class IndustryService {
     }
 
     public BigDecimal getIndustry_n_DaysGrowth(int days, String industryType) {
-        BigDecimal growth = getGrowth(industryType,days, getIndustryStockInfo(industryType));
+        BigDecimal growth = getGrowth(industryType, days, getIndustryStockInfo(industryType));
         return growth;
     }
 
@@ -244,7 +256,7 @@ public class IndustryService {
     }
 
     public BigDecimal getSubIndustry_n_DaysGrowth(int days, String industryType, String subIndustryName) {
-        BigDecimal growth = getGrowth(subIndustryName,days, getSubIndustryStockInfo(industryType, subIndustryName));
+        BigDecimal growth = getGrowth(subIndustryName, days, getSubIndustryStockInfo(industryType, subIndustryName));
         return growth;
     }
 }

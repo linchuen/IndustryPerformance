@@ -3,7 +3,6 @@ package cooba.IndustryPerformance.service;
 import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.constant.UrlEnum;
 import cooba.IndustryPerformance.database.entity.Industry.Industry;
-import cooba.IndustryPerformance.database.entity.Industry.Stock;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
@@ -31,7 +30,7 @@ public class LocalcacheService {
 
     public static List<String> industryLock = new ArrayList<>();
     public static List<String> subindustryLock = new ArrayList<>();
-    public static Map<String,List<String>> stockcodeLock = new HashMap<String, List<String>>();
+    public static Map<String, List<String>> stockcodeLock = new HashMap<String, List<String>>();
 
     @PostConstruct
     public void init() {
@@ -50,13 +49,13 @@ public class LocalcacheService {
                 industryRepository.save(industry);
                 industry.getSubIndustries().forEach(subIndustry -> {
                     subindustryLock.add(subIndustry.getSubIndustryName());
-                    stockcodeLock.put(urlEnum.name(),subIndustry.getCompanies().stream().map(stock->stock.getStockcode()).collect(Collectors.toList()));
+                    stockcodeLock.put(urlEnum.name(), subIndustry.getCompanies().stream().map(stock -> stock.getStockcode()).collect(Collectors.toList()));
                 });
-            }else{
+            } else {
                 Industry industry = industryRepository.findByIndustryName(urlEnum.name()).get();
                 industry.getSubIndustries().forEach(subIndustry -> {
                     subindustryLock.add(subIndustry.getSubIndustryName());
-                    stockcodeLock.put(urlEnum.name(),subIndustry.getCompanies().stream().map(stock->stock.getStockcode()).collect(Collectors.toList()));
+                    stockcodeLock.put(urlEnum.name(), subIndustry.getCompanies().stream().map(stock -> stock.getStockcode()).collect(Collectors.toList()));
                 });
             }
         }
@@ -78,8 +77,8 @@ public class LocalcacheService {
 
     public String getStockcodeLock(String stockcode) {
         for (Map.Entry Lockindustry : stockcodeLock.entrySet()) {
-            for(String lockStcokCode:(List<String>)Lockindustry.getValue()){
-                if(lockStcokCode.equals(stockcode)){
+            for (String lockStcokCode : (List<String>) Lockindustry.getValue()) {
+                if (lockStcokCode.equals(stockcode)) {
                     return lockStcokCode;
                 }
             }
@@ -87,12 +86,29 @@ public class LocalcacheService {
         return "";
     }
 
-    public Map<String,List<String>> updateStockcodeLockMap(String industryType,Map<String,List<String>> oldStockcodeLockMap,List<String> newStockcodeLockList) {
-        oldStockcodeLockMap.computeIfPresent(industryType,(k,v)->v=newStockcodeLockList);
-        return oldStockcodeLockMap;
+    public void updateStockcodeLockMap() {
+        for (UrlEnum urlEnum : UrlEnum.values()) {
+            if (!industryRepository.findByIndustryName(urlEnum.name()).isPresent()) {
+                List<SubIndustry> subIndustryList = crawlerService.crawlIndustry(urlEnum.getUrl());
+                Industry industry = Industry.builder()
+                        .industryName(urlEnum.name())
+                        .subIndustries(subIndustryList)
+                        .updatedTime(LocalDateTime.now())
+                        .build();
+                industryRepository.save(industry);
+                industry.getSubIndustries().forEach(subIndustry -> {
+                    stockcodeLock.put(urlEnum.name(), subIndustry.getCompanies().stream().map(stock -> stock.getStockcode()).collect(Collectors.toList()));
+                });
+            } else {
+                Industry industry = industryRepository.findByIndustryName(urlEnum.name()).get();
+                industry.getSubIndustries().forEach(subIndustry -> {
+                    stockcodeLock.put(urlEnum.name(), subIndustry.getCompanies().stream().map(stock -> stock.getStockcode()).collect(Collectors.toList()));
+                });
+            }
+        }
     }
 
-    public Map<String,List<String>> getStockcodeLockList() {
+    public Map<String, List<String>> getStockcodeLockList() {
         return stockcodeLock;
     }
 }
