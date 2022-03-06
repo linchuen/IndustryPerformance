@@ -21,7 +21,7 @@ public class IndustryController {
 
     @GetMapping("industry/type")
     public List getAllIndustryType() {
-        List list=Arrays.stream(UrlEnum.values()).map(urlEnum -> urlEnum.name()).collect(Collectors.toList());
+        List list = Arrays.stream(UrlEnum.values()).map(urlEnum -> urlEnum.name()).collect(Collectors.toList());
         return list;
     }
 
@@ -40,7 +40,7 @@ public class IndustryController {
     @GetMapping("industry/sub/{industryType}")
     public String getSubIndustryInfo(@PathVariable String industryType) {
         try {
-            Set<String> set= industryService.getSubIndustryInfo(industryType);
+            Set<String> set = industryService.getSubIndustryInfo(industryType);
             String json = new ObjectMapper().writeValueAsString(set);
             return json;
         } catch (JsonProcessingException e) {
@@ -48,12 +48,12 @@ public class IndustryController {
         }
     }
 
-    @GetMapping("industry/growth/{industryType}")
-    public Float getIndustryGrowth(String industryType) {
+    @GetMapping("industry/growth ")
+    public Float getIndustryGrowth(@RequestParam("Type") String industryType) {
         return industryService.getIndustryGrowth(industryType).floatValue();
     }
 
-    @GetMapping("industry/n_days_growth")
+    @GetMapping("industry/growth")
     public Float getIndustry_n_DaysGrowth(@RequestParam("Days") int days, @RequestParam("Type") String industryType) {
         return industryService.getIndustry_n_DaysGrowth(days, industryType).floatValue();
     }
