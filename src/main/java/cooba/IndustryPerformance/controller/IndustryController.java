@@ -48,8 +48,8 @@ public class IndustryController {
         }
     }
 
-    @GetMapping("industry/growth ")
-    public Float getIndustryGrowth(@RequestParam("Type") String industryType) {
+    @GetMapping("industry/growth/{industryType}")
+    public Float getIndustryGrowth(@PathVariable String industryType) {
         return industryService.getIndustryGrowth(industryType).floatValue();
     }
 

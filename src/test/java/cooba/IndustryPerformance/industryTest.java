@@ -51,7 +51,7 @@ public class industryTest {
         log.info(stopWatch.prettyPrint());
     }
 
-    @Test
+    //@Test
     public void buildIndustryStockDetailInfoTest() {
         //stockService.deleteAllStockDetail();
         StopWatch stopWatch = new StopWatch("Async");
@@ -61,8 +61,7 @@ public class industryTest {
         log.info("Async 耗時:{}", stopWatch.getTotalTimeSeconds());
     }
 
-    @Deprecated
-    @Test
+    //@Test
     public void buildIndustryStockDetailInfoWithoutAsyncTest() {
         //stockService.deleteAllStockDetail();
         StopWatch stopWatch = new StopWatch("WithoutAsync");
