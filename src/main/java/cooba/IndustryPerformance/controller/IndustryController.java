@@ -7,10 +7,7 @@ import cooba.IndustryPerformance.service.IndustryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -18,6 +15,11 @@ public class IndustryController {
 
     @Autowired
     IndustryService industryService;
+
+    @GetMapping("industry/all")
+    public List getAllIndustry() {
+        return industryService.getAllIndustry();
+    }
 
     @GetMapping("industry/type")
     public List getAllIndustryType() {

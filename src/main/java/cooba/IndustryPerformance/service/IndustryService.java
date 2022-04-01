@@ -1,5 +1,7 @@
 package cooba.IndustryPerformance.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.constant.UrlEnum;
 import cooba.IndustryPerformance.database.entity.Industry.Industry;
@@ -9,6 +11,7 @@ import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.BoundSetOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -39,6 +42,8 @@ public class IndustryService {
     LocalcacheService localcacheService;
     @Autowired
     RedisTemplate redisTemplate;
+    @Autowired
+    ObjectMapper objectMapper;
 
     private static Integer FAILRATESTANDARD = 70;
 
@@ -115,6 +120,51 @@ public class IndustryService {
             redisTemplate.delete(RedisConstant.BLACKLIST + "*");
         }
         log.info("buildIndustryStockDetailInfo 成功");
+    }
+
+    /*
+     * Get Method
+     * */
+
+    public List<Industry> getAllIndustry() {
+        List<Industry> industrylist = new ArrayList<>();
+        for (UrlEnum urlEnum : UrlEnum.values()) {
+            String industryType = urlEnum.name();
+            if (redisTemplate.hasKey(RedisConstant.INDUSTRY + industryType)) {
+                try {
+                    log.info("{} 已從redis取得產業 {} 資訊", getClass().getSimpleName(), industryType);
+                    String industryString = String.valueOf(redisTemplate.boundValueOps(RedisConstant.INDUSTRY + industryType).get());
+                    Industry industry = objectMapper.readValue(industryString, Industry.class);
+                    industrylist.add(industry);
+                } catch (JsonProcessingException e) {
+                    log.warn("{} industry:{}寫入redis失敗", getClass().getSimpleName(), industryType);
+                }
+            } else {
+                synchronized (localcacheService.getIndustryLock(industryType)) {
+                    if (redisTemplate.hasKey(RedisConstant.INDUSTRY + industryType)) {
+                        try {
+                            log.info("{} 已從mongo新增redis並取得產業 {} 資訊", getClass().getSimpleName(), industryType);
+                            String industryString = String.valueOf(redisTemplate.boundValueOps(RedisConstant.INDUSTRY + industryType).get());
+                            Industry industry = objectMapper.readValue(industryString, Industry.class);
+                            industrylist.add(industry);
+                        } catch (JsonProcessingException e) {
+                            log.warn("{} industry:{}寫入redis失敗", getClass().getSimpleName(), industryType);
+                        }
+                    } else {
+                        industryRepository.findByIndustryName(industryType).ifPresent(industry -> {
+                            try {
+                                String industryString = objectMapper.writeValueAsString(industry);
+                                redisTemplate.boundValueOps(RedisConstant.INDUSTRY + industryType).set(industryString);
+                            } catch (JsonProcessingException e) {
+                                log.warn("{} industry:{}寫入redis失敗", getClass().getSimpleName(), industryType);
+                            }
+                            industrylist.add(industry);
+                        });
+                    }
+                }
+            }
+        }
+        return industrylist;
     }
 
     public Map<String, String> getIndustryStockInfo(String industryType) {
