@@ -1,4 +1,4 @@
-package cooba.IndustryPerformance.constant;
+package cooba.IndustryPerformance.enums;
 
 public enum UrlEnum {
     //財報狗

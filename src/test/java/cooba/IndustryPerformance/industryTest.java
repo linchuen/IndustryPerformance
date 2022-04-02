@@ -1,6 +1,6 @@
 package cooba.IndustryPerformance;
 
-import cooba.IndustryPerformance.constant.UrlEnum;
+import cooba.IndustryPerformance.enums.UrlEnum;
 import cooba.IndustryPerformance.service.IndustryService;
 import cooba.IndustryPerformance.service.StockService;
 import lombok.extern.slf4j.Slf4j;

@@ -2,12 +2,15 @@ package cooba.IndustryPerformance.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import cooba.IndustryPerformance.constant.UrlEnum;
+import cooba.IndustryPerformance.enums.UrlEnum;
 import cooba.IndustryPerformance.service.IndustryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -26,7 +29,6 @@ public class IndustryController {
         List list = Arrays.stream(UrlEnum.values()).map(urlEnum -> urlEnum.name()).collect(Collectors.toList());
         return list;
     }
-
 
     @GetMapping("industry/stockInfo/{industryType}")
     public String getIndustryStockInfo(@PathVariable String industryType) {

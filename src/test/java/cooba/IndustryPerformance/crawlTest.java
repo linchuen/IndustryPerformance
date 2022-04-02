@@ -1,6 +1,6 @@
 package cooba.IndustryPerformance;
 
-import cooba.IndustryPerformance.constant.UrlEnum;
+import cooba.IndustryPerformance.enums.UrlEnum;
 import cooba.IndustryPerformance.service.CrawlerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

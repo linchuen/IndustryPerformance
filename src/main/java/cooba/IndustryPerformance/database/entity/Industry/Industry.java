@@ -1,5 +1,6 @@
 package cooba.IndustryPerformance.database.entity.Industry;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -16,5 +17,6 @@ public class Industry {
     private String id;
     private List<SubIndustry> subIndustries;
     private String industryName;
+    @JsonIgnore
     private LocalDateTime updatedTime;
 }

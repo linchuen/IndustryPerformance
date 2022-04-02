@@ -37,7 +37,7 @@
     <Appenders>
         <!-- 控制檯輸出 appender，SYSTEM_OUT輸出黑色，SYSTEM_ERR輸出紅色 -->
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%20t] %-5level %F%M%L - %msg%n"/>
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%20t] %-5level %c{-10}[%M]%L - %msg%n"/>
         </Console>
 
         <!-- 日誌檔案輸出 appender -->
@@ -62,7 +62,7 @@
             includeLocation="false" 關閉日誌記錄的行號資訊，開啟的話會嚴重影響非同步輸出的效能
             additivity="false" 不再繼承 rootlogger物件
          -->
-        <AsyncLogger name="com.log" level="trace" includeLocation="false" additivity="false">
+        <AsyncLogger name="com.log" level="trace" includeLocation="true" additivity="false">
             <AppenderRef ref="Console"/>
         </AsyncLogger>
         <!-- 使用 rootLogger 配置 日誌級別 level="trace" -->

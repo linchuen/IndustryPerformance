@@ -3,15 +3,14 @@ package cooba.IndustryPerformance.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cooba.IndustryPerformance.constant.RedisConstant;
-import cooba.IndustryPerformance.constant.UrlEnum;
 import cooba.IndustryPerformance.database.entity.Industry.Industry;
 import cooba.IndustryPerformance.database.entity.Industry.Stock;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
+import cooba.IndustryPerformance.enums.UrlEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.BoundSetOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -132,23 +131,23 @@ public class IndustryService {
             String industryType = urlEnum.name();
             if (redisTemplate.hasKey(RedisConstant.INDUSTRY + industryType)) {
                 try {
-                    log.info("{} 已從redis取得產業 {} 資訊", getClass().getSimpleName(), industryType);
+                    log.info("取得 Industry:{} redis資訊 ", industryType);
                     String industryString = String.valueOf(redisTemplate.boundValueOps(RedisConstant.INDUSTRY + industryType).get());
                     Industry industry = objectMapper.readValue(industryString, Industry.class);
                     industrylist.add(industry);
                 } catch (JsonProcessingException e) {
-                    log.warn("{} industry:{}寫入redis失敗", getClass().getSimpleName(), industryType);
+                    log.warn("Industry:{} 寫入redis失敗", industryType);
                 }
             } else {
                 synchronized (localcacheService.getIndustryLock(industryType)) {
                     if (redisTemplate.hasKey(RedisConstant.INDUSTRY + industryType)) {
                         try {
-                            log.info("{} 已從mongo新增redis並取得產業 {} 資訊", getClass().getSimpleName(), industryType);
+                            log.info("取得 Industry: {} redis synchronized資訊", industryType);
                             String industryString = String.valueOf(redisTemplate.boundValueOps(RedisConstant.INDUSTRY + industryType).get());
                             Industry industry = objectMapper.readValue(industryString, Industry.class);
                             industrylist.add(industry);
                         } catch (JsonProcessingException e) {
-                            log.warn("{} industry:{}寫入redis失敗", getClass().getSimpleName(), industryType);
+                            log.warn("industry: {} 寫入redis失敗", industryType);
                         }
                     } else {
                         industryRepository.findByIndustryName(industryType).ifPresent(industry -> {
@@ -156,7 +155,7 @@ public class IndustryService {
                                 String industryString = objectMapper.writeValueAsString(industry);
                                 redisTemplate.boundValueOps(RedisConstant.INDUSTRY + industryType).set(industryString);
                             } catch (JsonProcessingException e) {
-                                log.warn("{} industry:{}寫入redis失敗", getClass().getSimpleName(), industryType);
+                                log.warn("industry: {} 寫入redis失敗", industryType);
                             }
                             industrylist.add(industry);
                         });
@@ -169,18 +168,17 @@ public class IndustryService {
 
     public Map<String, String> getIndustryStockInfo(String industryType) {
         if (redisTemplate.hasKey(RedisConstant.INDUSTRYINFO + industryType)) {
-            log.info("已從redis取得產業 {} 資訊", industryType);
+            log.info("取得 IndustryStockInfo: {} redis資訊", industryType);
             return redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType).entries();
         } else {
             synchronized (localcacheService.getIndustryLock(industryType)) {
                 if (redisTemplate.hasKey(RedisConstant.INDUSTRYINFO + industryType)) {
-                    log.info("已從mongo新增redis並取得產業 {} 資訊", industryType);
+                    log.info("取得 IndustryStockInfo: {} redis synchronized資訊", industryType);
                     return redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType).entries();
                 }
                 Map<String, String> industryStockMap = new HashMap<>();
-                if (industryRepository.findByIndustryName(industryType).isPresent()) {
-                    Industry industry = industryRepository.findByIndustryName(industryType).get();
-                    log.info("已從mongo取得產業 {} 資訊", industryType);
+                industryRepository.findByIndustryName(industryType).ifPresent(industry -> {
+                    log.info("取得 IndustryStockInfo: {} mongodb資訊", industryType);
                     industry.getSubIndustries()
                             .forEach(subIndustry -> subIndustry.getCompanies()
                                     .forEach(stock -> {
@@ -189,8 +187,7 @@ public class IndustryService {
                                             redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType).put(stock.getStockcode(), stock.getName());
                                         }
                                     }));
-                    return industryStockMap;
-                }
+                });
                 return industryStockMap;
             }
         }
@@ -198,18 +195,18 @@ public class IndustryService {
 
     public Set<String> getSubIndustryInfo(String industryType) {
         if (redisTemplate.hasKey(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry")) {
-            log.info("已從redis取得副產業 {} 類別資訊", industryType);
+            log.info("取得 SubIndustryInfo: {} redis資訊", industryType);
             return redisTemplate.boundSetOps(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry").members();
         } else {
             synchronized (localcacheService.getIndustryLock(industryType)) {
                 if (redisTemplate.hasKey(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry")) {
-                    log.info("已從mongo新增redis並取得副產業 {} 類別資訊", industryType);
+                    log.info("取得 SubIndustryInfo: {} redis synchronized資訊", industryType);
                     return redisTemplate.boundSetOps(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry").members();
                 }
                 Set<String> subIndustrySet = new HashSet<>();
                 if (industryRepository.findByIndustryName(industryType).isPresent()) {
                     Industry industry = industryRepository.findByIndustryName(industryType).get();
-                    log.info("已從mongo取得副產業 {} 類別資訊", industryType);
+                    log.info("取得 SubIndustryInfo: {} mongodb資訊", industryType);
                     industry.getSubIndustries()
                             .forEach(subIndustry -> {
                                 subIndustrySet.add(subIndustry.getSubIndustryName());
@@ -224,18 +221,18 @@ public class IndustryService {
 
     public Map<String, String> getSubIndustryStockInfo(String industryType, String subIndustryName) {
         if (redisTemplate.hasKey(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName)) {
-            log.info("已從redis取得副產業 {} {} 資訊", industryType, subIndustryName);
+            log.info("取得SubIndustryStockInfo: {} {} redis資訊", industryType, subIndustryName);
             return redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName).entries();
         } else {
             synchronized (localcacheService.getSubIndustryLock(subIndustryName)) {
                 if (redisTemplate.hasKey(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName)) {
-                    log.info("已從mongo新增redis並取得副產業 {} {} 資訊", industryType, subIndustryName);
+                    log.info("取得SubIndustryStockInfo: {} {} redis synchronized資訊", industryType, subIndustryName);
                     return redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName).entries();
                 }
                 Map<String, String> subIndustryMap = new HashMap<>();
                 if (industryRepository.findByIndustryName(industryType).isPresent()) {
                     Industry industry = industryRepository.findByIndustryName(industryType).get();
-                    log.info("已從mongo取得副產業 {} {} 資訊", industryType, subIndustryName);
+                    log.info("取得SubIndustryStockInfo: {} {} mongoy資訊", industryType, subIndustryName);
                     for (SubIndustry subIndustry : industry.getSubIndustries()) {
                         if (subIndustryName.equals(subIndustry.getSubIndustryName())) {
                             BoundHashOperations boundHashOperations = redisTemplate.boundHashOps(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName);
@@ -260,14 +257,14 @@ public class IndustryService {
         AtomicReference<BigDecimal> last_n_daysPrice = new AtomicReference<BigDecimal>(new BigDecimal(0));
 
         for (Entry<String, String> entry : StockMap.entrySet()) {
-            String k = entry.getKey();
-            String v = entry.getValue();
+            String stockcode = entry.getKey();
+            String stockname = entry.getValue();
 
-            StockDetail stock = stockService.getStockDetailToday(k).orElseGet(() -> stockService.buildStockDetail(k));
+            StockDetail stock = stockService.getStockDetailToday(stockcode).orElseGet(() -> stockService.buildStockDetail(stockcode));
             if (days > 1) {
-                StockDetail stock_n = stockService.getStockDetailLast_n_day(k, days).orElseGet(null);
+                StockDetail stock_n = stockService.getStockDetailLast_n_day(stockcode, days).orElse(null);
                 if (stock == null || stock_n == null) {
-                    log.warn("{} {}找不到資料", k, v);
+                    log.warn("{} {}找不到資料", stockcode, stockname);
                     continue;
                 }
                 stocklist.add(stock.getName());
@@ -275,7 +272,7 @@ public class IndustryService {
                 last_n_daysPrice.updateAndGet(v1 -> v1.add(stock_n.getPrice()));
             } else {
                 if (stock == null) {
-                    log.warn("{} {}找不到資料", k, v);
+                    log.warn("{} {}找不到資料", stockcode, stockname);
                     continue;
                 }
                 stocklist.add(stock.getName());
