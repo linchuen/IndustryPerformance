@@ -4,13 +4,13 @@ import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.database.entity.Industry.Stock;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
+import cooba.IndustryPerformance.utility.RedisUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class CrawlerService {
     @Autowired
-    RedisTemplate redisTemplate;
+    RedisUtility redisUtility;
 
     private static Boolean PRIAMRYSOURCE = true;
 
@@ -99,7 +99,7 @@ public class CrawlerService {
             return stock;
         } catch (Exception e) {
             log.warn("{}爬取失敗", stockcode);
-            redisTemplate.opsForValue().set(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
+            redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
             return null;
         }
     }
@@ -138,7 +138,7 @@ public class CrawlerService {
             return stock;
         } catch (Exception e) {
             log.warn("{}爬取失敗", stockcode);
-            redisTemplate.opsForValue().set(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
+            redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
             return null;
         }
     }

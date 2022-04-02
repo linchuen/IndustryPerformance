@@ -37,7 +37,7 @@ class IndustryPerformanceApplicationTests {
         redisTemplate.opsForValue().set(RedisConstant.STOCKDETAIL + LocalDate.now().toString() + "::" + stockcode, objectMapper.writeValueAsString(stockDetail), 90, TimeUnit.DAYS);
         System.out.println(redisObjectTemplate.opsForValue().get("stockDetail:2022-04-01:2330"));
         System.out.println(redisObjectTemplate.opsForValue().get("stockDetail:2022-04-01:2330").getClass());
-        String s = String.valueOf(redisTemplate.opsForValue().get("stockDetail:2022-04-01::2330"));
+        String s = String.valueOf(redisTemplate.opsForValue().get("stockDetail:2022-04-02:5864"));
         System.out.println(redisTemplate.opsForValue().get("stockDetail:2022-04-01::2330"));
         StockDetail stockDetail1 = objectMapper.readValue(s, StockDetail.class);
         System.out.println(stockDetail1.getName());

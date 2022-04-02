@@ -30,7 +30,7 @@ public class LocalcacheService {
 
     public static List<String> industryLock = new ArrayList<>();
     public static List<String> subindustryLock = new ArrayList<>();
-    public static Map<String, List<String>> stockcodeLock = new HashMap<String, List<String>>();
+    public static Set<String> stockcodeLock = new HashSet<>();
 
     @PostConstruct
     public void init() {
@@ -38,27 +38,7 @@ public class LocalcacheService {
         stockDetailRepository.findByCompanyType("興櫃")
                 .forEach(stockDetail -> redisTemplate.opsForValue().set(RedisConstant.BLACKLIST + stockDetail.getStockcode(), stockDetail.getStockcode()));
         industryLock = Arrays.stream(UrlEnum.values()).map(o -> o.name()).collect(Collectors.toList());
-        for (UrlEnum urlEnum : UrlEnum.values()) {
-            if (!industryRepository.findByIndustryName(urlEnum.name()).isPresent()) {
-                List<SubIndustry> subIndustryList = crawlerService.crawlIndustry(urlEnum.getUrl());
-                Industry industry = Industry.builder()
-                        .industryName(urlEnum.name())
-                        .subIndustries(subIndustryList)
-                        .updatedTime(LocalDateTime.now())
-                        .build();
-                industryRepository.save(industry);
-                industry.getSubIndustries().forEach(subIndustry -> {
-                    subindustryLock.add(subIndustry.getSubIndustryName());
-                    stockcodeLock.put(urlEnum.name(), subIndustry.getCompanies().stream().map(stock -> stock.getStockcode()).collect(Collectors.toList()));
-                });
-            } else {
-                Industry industry = industryRepository.findByIndustryName(urlEnum.name()).get();
-                industry.getSubIndustries().forEach(subIndustry -> {
-                    subindustryLock.add(subIndustry.getSubIndustryName());
-                    stockcodeLock.put(urlEnum.name(), subIndustry.getCompanies().stream().map(stock -> stock.getStockcode()).collect(Collectors.toList()));
-                });
-            }
-        }
+        updateStockcodeLockMap();
     }
 
     public String getIndustryLock(String industryType) {
@@ -76,12 +56,8 @@ public class LocalcacheService {
     }
 
     public String getStockcodeLock(String stockcode) {
-        for (Map.Entry Lockindustry : stockcodeLock.entrySet()) {
-            for (String lockStcokCode : (List<String>) Lockindustry.getValue()) {
-                if (lockStcokCode.equals(stockcode)) {
-                    return lockStcokCode;
-                }
-            }
+        for (String s : stockcodeLock) {
+            if (s.equals(stockcode)) return s;
         }
         return "";
     }
@@ -97,18 +73,14 @@ public class LocalcacheService {
                         .build();
                 industryRepository.save(industry);
                 industry.getSubIndustries().forEach(subIndustry -> {
-                    stockcodeLock.put(urlEnum.name(), subIndustry.getCompanies().stream().map(stock -> stock.getStockcode()).collect(Collectors.toList()));
+                    subIndustry.getCompanies().forEach(stock -> stockcodeLock.add(stock.getStockcode()));
                 });
             } else {
                 Industry industry = industryRepository.findByIndustryName(urlEnum.name()).get();
                 industry.getSubIndustries().forEach(subIndustry -> {
-                    stockcodeLock.put(urlEnum.name(), subIndustry.getCompanies().stream().map(stock -> stock.getStockcode()).collect(Collectors.toList()));
+                    subIndustry.getCompanies().forEach(stock -> stockcodeLock.add(stock.getStockcode()));
                 });
             }
         }
-    }
-
-    public Map<String, List<String>> getStockcodeLockList() {
-        return stockcodeLock;
     }
 }
