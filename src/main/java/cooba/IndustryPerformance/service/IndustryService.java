@@ -1,6 +1,5 @@
 package cooba.IndustryPerformance.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.database.entity.Industry.Industry;
 import cooba.IndustryPerformance.database.entity.Industry.Stock;
@@ -17,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.Map.Entry;
@@ -39,10 +39,9 @@ public class IndustryService {
     LocalcacheService localcacheService;
     @Autowired
     RedisUtility redisUtility;
-    @Autowired
-    ObjectMapper objectMapper;
 
     private static Integer FAILRATESTANDARD = 70;
+    private String today = LocalDate.now().toString();
 
     public void biuldAllIndustryInfo() {
         UrlEnum[] urlEnums = UrlEnum.values();
@@ -109,7 +108,7 @@ public class IndustryService {
         CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0])).join();
         int failrate = 100 * failCount.get() / industryStockMap.size();
         if (failrate > FAILRATESTANDARD) {
-            log.warn("buildIndustryStockDetailInfo > 70% 產業: {}", industryType);
+            log.warn("buildIndustryStockDetailInfo 失敗率> 70% 產業: {}", industryType);
             crawlerService.changeSource();
             redisUtility.delete(RedisConstant.BLACKLIST + "*");
         }
@@ -124,19 +123,21 @@ public class IndustryService {
         List<Industry> industrylist = new ArrayList<>();
         for (UrlEnum urlEnum : UrlEnum.values()) {
             String industryType = urlEnum.name();
-            if (redisUtility.hasKey(RedisConstant.INDUSTRY + industryType)) {
+            String key = RedisConstant.INDUSTRY + industryType;
+
+            if (redisUtility.hasKey(key)) {
                 log.info("取得 Industry:{} redis資訊 ", industryType);
-                Industry industry = (Industry) redisUtility.valueObjectGet(RedisConstant.INDUSTRY + industryType, Industry.class);
+                Industry industry = (Industry) redisUtility.valueObjectGet(key, Industry.class);
                 industrylist.add(industry);
             } else {
                 synchronized (localcacheService.getIndustryLock(industryType)) {
-                    if (redisUtility.hasKey(RedisConstant.INDUSTRY + industryType)) {
+                    if (redisUtility.hasKey(key)) {
                         log.info("取得 Industry: {} redis synchronized資訊", industryType);
-                        Industry industry = (Industry) redisUtility.valueObjectGet(RedisConstant.INDUSTRY + industryType, Industry.class);
+                        Industry industry = (Industry) redisUtility.valueObjectGet(key, Industry.class);
                         industrylist.add(industry);
                     } else {
                         industryRepository.findByIndustryName(industryType).ifPresent(industry -> {
-                            redisUtility.valueObjectSet(RedisConstant.INDUSTRY + industryType, industry);
+                            redisUtility.valueObjectSet(key, industry);
                             industrylist.add(industry);
                         });
                     }
@@ -147,14 +148,16 @@ public class IndustryService {
     }
 
     public Map<String, String> getIndustryStockInfo(String industryType) {
-        if (redisUtility.hasKey(RedisConstant.INDUSTRYINFO + industryType)) {
+        String key = RedisConstant.INDUSTRYINFO + industryType;
+
+        if (redisUtility.hasKey(key)) {
             log.info("取得 IndustryStockInfo: {} redis資訊", industryType);
-            return redisUtility.Map(RedisConstant.INDUSTRYINFO + industryType).entries();
+            return redisUtility.Map(key).entries();
         } else {
             synchronized (localcacheService.getIndustryLock(industryType)) {
-                if (redisUtility.hasKey(RedisConstant.INDUSTRYINFO + industryType)) {
+                if (redisUtility.hasKey(key)) {
                     log.info("取得 IndustryStockInfo: {} redis synchronized資訊", industryType);
-                    return redisUtility.Map(RedisConstant.INDUSTRYINFO + industryType).entries();
+                    return redisUtility.Map(key).entries();
                 }
                 Map<String, String> industryStockMap = new HashMap<>();
                 industryRepository.findByIndustryName(industryType).ifPresent(industry -> {
@@ -164,7 +167,7 @@ public class IndustryService {
                                     .forEach(stock -> {
                                         if (!redisUtility.hasKey(RedisConstant.BLACKLIST + stock.getStockcode())) {
                                             industryStockMap.put(stock.getStockcode(), stock.getName());
-                                            redisUtility.mapPut(RedisConstant.INDUSTRYINFO + industryType, stock.getStockcode(), stock.getName());
+                                            redisUtility.mapPut(key, stock.getStockcode(), stock.getName());
                                         }
                                     }));
                 });
@@ -174,14 +177,16 @@ public class IndustryService {
     }
 
     public Set<String> getSubIndustryInfo(String industryType) {
-        if (redisUtility.hasKey(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry")) {
+        String key = RedisConstant.INDUSTRYINFO + industryType + ":subIndustry";
+
+        if (redisUtility.hasKey(key)) {
             log.info("取得 SubIndustryInfo: {} redis資訊", industryType);
-            return redisUtility.Set(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry").members();
+            return redisUtility.Set(key).members();
         } else {
             synchronized (localcacheService.getIndustryLock(industryType)) {
-                if (redisUtility.hasKey(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry")) {
+                if (redisUtility.hasKey(key)) {
                     log.info("取得 SubIndustryInfo: {} redis synchronized資訊", industryType);
-                    return redisUtility.Set(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry").members();
+                    return redisUtility.Set(key).members();
                 }
                 Set<String> subIndustrySet = new HashSet<>();
                 if (industryRepository.findByIndustryName(industryType).isPresent()) {
@@ -190,7 +195,7 @@ public class IndustryService {
                     industry.getSubIndustries()
                             .forEach(subIndustry -> {
                                 subIndustrySet.add(subIndustry.getSubIndustryName());
-                                redisUtility.setAdd(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry", subIndustry.getSubIndustryName());
+                                redisUtility.setAdd(key, subIndustry.getSubIndustryName());
                             });
                     return subIndustrySet;
                 }
@@ -200,22 +205,24 @@ public class IndustryService {
     }
 
     public Map<String, String> getSubIndustryStockInfo(String industryType, String subIndustryName) {
-        if (redisUtility.hasKey(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName)) {
+        String key = RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName;
+
+        if (redisUtility.hasKey(key)) {
             log.info("取得SubIndustryStockInfo: {} {} redis資訊", industryType, subIndustryName);
-            return redisUtility.Map(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName).entries();
+            return redisUtility.Map(key).entries();
         } else {
             synchronized (localcacheService.getSubIndustryLock(subIndustryName)) {
-                if (redisUtility.hasKey(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName)) {
+                if (redisUtility.hasKey(key)) {
                     log.info("取得SubIndustryStockInfo: {} {} redis synchronized資訊", industryType, subIndustryName);
-                    return redisUtility.Map(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName).entries();
+                    return redisUtility.Map(key).entries();
                 }
                 Map<String, String> subIndustryMap = new HashMap<>();
                 if (industryRepository.findByIndustryName(industryType).isPresent()) {
                     Industry industry = industryRepository.findByIndustryName(industryType).get();
-                    log.info("取得SubIndustryStockInfo: {} {} mongoy資訊", industryType, subIndustryName);
+                    log.info("取得SubIndustryStockInfo: {} {} mongodb資訊", industryType, subIndustryName);
                     for (SubIndustry subIndustry : industry.getSubIndustries()) {
                         if (subIndustryName.equals(subIndustry.getSubIndustryName())) {
-                            BoundHashOperations boundHashOperations = redisUtility.Map(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustryName);
+                            BoundHashOperations boundHashOperations = redisUtility.Map(key);
                             boundHashOperations.putAll(subIndustry.getCompanies().stream().collect(Collectors.toMap(Stock::getStockcode, Stock::getName)));
                             subIndustryMap = subIndustry.getCompanies().stream().collect(Collectors.toMap(Stock::getStockcode, Stock::getName));
                         }
@@ -228,6 +235,11 @@ public class IndustryService {
     }
 
     public BigDecimal getGrowth(String industryType, int days, Map<String, String> StockMap) {
+        if (redisUtility.hasKey(RedisConstant.GROWTH + industryType + ":" + today)) {
+            log.info("取得Growth: {} redis資訊", industryType);
+            BigDecimal growth = new BigDecimal(redisUtility.valueGet(RedisConstant.GROWTH + industryType + ":" + today));
+            return growth;
+        }
         List<String> stocklist = new ArrayList<>();
         if (StockMap.isEmpty()) {
             log.warn("StockMap 為空");
@@ -240,7 +252,13 @@ public class IndustryService {
             String stockcode = entry.getKey();
             String stockname = entry.getValue();
 
-            StockDetail stock = stockService.getStockDetailToday(stockcode).orElseGet(() -> stockService.buildStockDetail(stockcode));
+            StockDetail stock = stockService.getStockDetailToday(stockcode).orElseGet(() -> {
+                if (!redisUtility.hasKey(RedisConstant.BLACKLIST + stockcode)) {
+                    return stockService.buildStockDetail(stockcode);
+                } else {
+                    return null;
+                }
+            });
             if (days > 1) {
                 StockDetail stock_n = stockService.getStockDetailLast_n_day(stockcode, days).orElse(null);
                 if (stock == null || stock_n == null) {
@@ -263,6 +281,7 @@ public class IndustryService {
         BigDecimal result = new BigDecimal(0);
         BigDecimal growth = result.add(price.get()).subtract(last_n_daysPrice.get()).divide(last_n_daysPrice.get(), 4, RoundingMode.HALF_UP);
         log.info("產業:{} 漲幅:{} 今日股價和:{} {}日股價和:{} 列表:{}", industryType, growth, price.get(), days, last_n_daysPrice.get(), stocklist);
+        redisUtility.valueSet(RedisConstant.GROWTH + industryType + ":" + today, String.valueOf(growth));
         return growth;
     }
 

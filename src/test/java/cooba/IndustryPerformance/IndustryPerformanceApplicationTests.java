@@ -42,4 +42,12 @@ class IndustryPerformanceApplicationTests {
         StockDetail stockDetail1 = objectMapper.readValue(s, StockDetail.class);
         System.out.println(stockDetail1.getName());
     }
+
+    @Test
+    public void rediskeyTest() {
+        LocalDate localDate = LocalDate.now().minusDays(0);
+        String key = RedisConstant.STOCKDETAIL + localDate.toString() + ":" + 2882;
+        System.out.println(key);
+        System.out.println(redisTemplate.hasKey(key));
+    }
 }

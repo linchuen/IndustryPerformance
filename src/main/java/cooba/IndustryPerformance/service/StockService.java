@@ -42,14 +42,11 @@ public class StockService {
                         }
                         try {
                             stockDetailRepository.save(stockDetail);
-                            log.info("股票代碼:{} 寫入mongo成功", stockcode);
+                            log.info("股票代碼:{} 寫入mongodb成功", stockcode);
                             redisUtility.valueObjectSet(RedisConstant.STOCKDETAIL + today + ":" + stockcode, stockDetail, 90, TimeUnit.DAYS);
                             return stockDetail;
-                        } catch (ClassCastException classCastException) {
-                            log.warn("股票代碼:{} 寫入redis失敗", stockcode);
-                            return stockDetail;
                         } catch (Exception e) {
-                            log.warn("股票代碼:{} 寫入mongo失敗", stockcode);
+                            log.warn("股票代碼:{} 寫入mongodb失敗", stockcode);
                             redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
                             return null;
                         }
@@ -63,19 +60,23 @@ public class StockService {
 
     public Optional<StockDetail> getStockDetailLast_n_day(String stockcode, int days) {
         LocalDate localDate = LocalDate.now().minusDays(days);
-        if (redisUtility.hasKey(RedisConstant.STOCKDETAIL + localDate.toString() + ":" + stockcode)) {
+        String key = RedisConstant.STOCKDETAIL + localDate.toString() + ":" + stockcode;
+
+        if (redisUtility.hasKey(key)) {
             log.info("取得 StockDetail: {} redis資訊", stockcode);
-            StockDetail stockDetail = (StockDetail) redisUtility.valueObjectGet(RedisConstant.STOCKDETAIL + today + ":" + stockcode, StockDetail.class);
+            StockDetail stockDetail = (StockDetail) redisUtility.valueObjectGet(key, StockDetail.class);
             return Optional.of(stockDetail);
         } else {
             synchronized (localcacheService.getStockcodeLock(stockcode)) {
-                if (redisUtility.hasKey(RedisConstant.STOCKDETAIL + localDate.toString() + ":" + stockcode)) {
+                if (redisUtility.hasKey(key)) {
                     log.info("取得 StockDetail: {} redis synchronized資訊", stockcode);
-                    StockDetail stockDetail = (StockDetail) redisUtility.valueObjectGet(RedisConstant.STOCKDETAIL + today + ":" + stockcode, StockDetail.class);
+                    StockDetail stockDetail = (StockDetail) redisUtility.valueObjectGet(key, StockDetail.class);
                     return Optional.of(stockDetail);
                 } else {
-                    log.info("取得 StockDetail: {} mongo資訊", stockcode);
-                    return stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, localDate);
+                    log.info("取得 StockDetail: {} mongodb資訊", stockcode);
+                    Optional<StockDetail> stockDetailOptional = stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, localDate);
+                    stockDetailOptional.ifPresent(stockDetail -> redisUtility.valueObjectSet(key, stockDetail));
+                    return stockDetailOptional;
                 }
             }
         }
