@@ -3,6 +3,7 @@ package cooba.IndustryPerformance.service;
 import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.database.entity.Industry.Industry;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
+import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import cooba.IndustryPerformance.enums.UrlEnum;
@@ -103,12 +104,14 @@ public class LocalcacheService {
                         subIndustry.getCompanies().forEach(stock -> {
                                     try {
                                         if (!stockDetailRepository.findByStockcodeAndCreatedTime(stock.getStockcode(), LocalDate.now()).isPresent()) {
-                                            crawlerService.crawlSecondarySourceStock(stock.getStockcode());
-                                            Thread.sleep(1000);
+                                            StockDetail stockDetail = crawlerService.crawlSecondarySourceStock(stock.getStockcode());
+                                            if (stockDetail != null) {
+                                                stockDetailRepository.save(stockDetail);
+                                            }
+                                            Thread.sleep(500);
                                         }
                                     } catch (InterruptedException e) {
-                                        stockDetailRepository.deleteByStockcodeAndCreatedTime(stock.getStockcode(), LocalDate.now());
-                                        crawlerService.crawlSecondarySourceStock(stock.getStockcode());
+                                        e.printStackTrace();
                                     }
                                 }
                         )
