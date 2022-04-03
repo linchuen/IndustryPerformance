@@ -21,8 +21,6 @@ public class StockService {
     @Autowired
     CrawlerService crawlerService;
     @Autowired
-    LocalcacheService localcacheService;
-    @Autowired
     RedisUtility redisUtility;
 
     private String today = LocalDate.now().toString();
@@ -33,9 +31,9 @@ public class StockService {
     }
 
     public StockDetail buildStockDetail(String stockcode) {
-        return stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, LocalDate.now())
-                .orElseGet(() -> {
-                    synchronized (localcacheService.getStockcodeLock(stockcode)) {
+        synchronized (LocalcacheService.getStockcodeLock(stockcode)) {
+            return stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, LocalDate.now())
+                    .orElseGet(() -> {
                         StockDetail stockDetail = crawlerService.crawlStock(stockcode);
                         if (stockDetail == null) {
                             return null;
@@ -50,8 +48,8 @@ public class StockService {
                             redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
                             return null;
                         }
-                    }
-                });
+                    });
+        }
     }
 
     public Optional<StockDetail> getStockDetailToday(String stockcode) {
@@ -67,7 +65,7 @@ public class StockService {
             StockDetail stockDetail = (StockDetail) redisUtility.valueObjectGet(key, StockDetail.class);
             return Optional.of(stockDetail);
         } else {
-            synchronized (localcacheService.getStockcodeLock(stockcode)) {
+            synchronized (LocalcacheService.getStockcodeLock(stockcode)) {
                 if (redisUtility.hasKey(key)) {
                     log.info("取得 StockDetail: {} redis synchronized資訊", stockcode);
                     StockDetail stockDetail = (StockDetail) redisUtility.valueObjectGet(key, StockDetail.class);

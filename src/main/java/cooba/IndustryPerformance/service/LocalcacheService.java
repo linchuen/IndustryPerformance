@@ -6,12 +6,14 @@ import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import cooba.IndustryPerformance.enums.UrlEnum;
+import cooba.IndustryPerformance.utility.RedisUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StopWatch;
 
 import javax.annotation.PostConstruct;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,7 +28,7 @@ public class LocalcacheService {
     @Autowired
     CrawlerService crawlerService;
     @Autowired
-    RedisTemplate redisTemplate;
+    RedisUtility redisUtility;
 
     public static List<String> industryLock = new ArrayList<>();
     public static List<String> subindustryLock = new ArrayList<>();
@@ -35,27 +37,38 @@ public class LocalcacheService {
     @PostConstruct
     public void init() {
         log.info("init");
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start("biuldAllIndustryInfo");
+        log.info("Start biuldAllIndustryInfo");
+        biuldAllIndustryInfo();
+        stopWatch.stop();
+        log.info("Task:{} 總夠耗時:{}", stopWatch.getLastTaskName(), stopWatch.getLastTaskTimeMillis());
+        stopWatch.start("buildtodayStockDetail");
+        log.info("Start buildtodayStockDetail");
+        buildtodayStockDetail();
+        stopWatch.stop();
+        log.info("Task:{} 總夠耗時:{}", stopWatch.getLastTaskName(), stopWatch.getLastTaskTimeMillis());
         stockDetailRepository.findByCompanyType("興櫃")
-                .forEach(stockDetail -> redisTemplate.opsForValue().set(RedisConstant.BLACKLIST + stockDetail.getStockcode(), stockDetail.getStockcode()));
+                .forEach(stockDetail -> redisUtility.valueSet(RedisConstant.BLACKLIST + stockDetail.getStockcode(), stockDetail.getStockcode()));
         industryLock = Arrays.stream(UrlEnum.values()).map(o -> o.name()).collect(Collectors.toList());
         updateStockcodeLockMap();
     }
 
-    public String getIndustryLock(String industryType) {
+    public static String getIndustryLock(String industryType) {
         for (String s : industryLock) {
             if (s.equals(industryType)) return s;
         }
         return "";
     }
 
-    public String getSubIndustryLock(String subIndustryName) {
+    public static String getSubIndustryLock(String subIndustryName) {
         for (String s : industryLock) {
             if (s.equals(subIndustryName)) return s;
         }
         return "";
     }
 
-    public String getStockcodeLock(String stockcode) {
+    public static String getStockcodeLock(String stockcode) {
         for (String s : stockcodeLock) {
             if (s.equals(stockcode)) return s;
         }
@@ -81,6 +94,63 @@ public class LocalcacheService {
                     subIndustry.getCompanies().forEach(stock -> stockcodeLock.add(stock.getStockcode()));
                 });
             }
+        }
+    }
+
+    public void buildtodayStockDetail() {
+        industryRepository.findAll().forEach(industry ->
+                industry.getSubIndustries().forEach(subIndustry ->
+                        subIndustry.getCompanies().forEach(stock -> {
+                                    try {
+                                        if (!stockDetailRepository.findByStockcodeAndCreatedTime(stock.getStockcode(), LocalDate.now()).isPresent()) {
+                                            crawlerService.crawlSecondarySourceStock(stock.getStockcode());
+                                            Thread.sleep(1000);
+                                        }
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                        )
+                )
+        );
+    }
+
+    /*
+     * 跟IndustryService一樣
+     *
+     * */
+    public void biuldAllIndustryInfo() {
+        UrlEnum[] urlEnums = UrlEnum.values();
+        for (UrlEnum urlEnum : urlEnums) {
+            buildIndustryInfo(urlEnum.name());
+        }
+    }
+
+    public void buildIndustryInfo(String industryType) {
+        String siteurl = UrlEnum.valueOf(industryType).getUrl();
+        List<SubIndustry> subIndustryList = crawlerService.crawlIndustry(siteurl);
+        Industry industry = Industry.builder()
+                .industryName(industryType)
+                .subIndustries(subIndustryList)
+                .updatedTime(LocalDateTime.now())
+                .build();
+
+        subIndustryList.forEach(subIndustry -> subIndustry.getCompanies()
+                .forEach(stock -> {
+                    redisUtility.setAdd(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry", subIndustry.getSubIndustryName());
+                    redisUtility.mapPut(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustry.getSubIndustryName(), stock.getStockcode(), stock.getName());
+                    redisUtility.mapPut(RedisConstant.INDUSTRYINFO + industryType, stock.getStockcode(), stock.getName());
+                }));
+
+        if (!industryRepository.findByIndustryName(industryType).isPresent()) {
+            industryRepository.save(industry);
+            log.info("產業別:{}成功建立", industryType);
+        } else {
+            Industry oldindustry = industryRepository.findByIndustryName(industryType).get();
+            log.info("產業別:{}已經存在 ", industryType);
+            industry.setId(oldindustry.getId());
+            industryRepository.save(industry);
+            log.info("產業別:{}成功更新", industryType);
         }
     }
 }

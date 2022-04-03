@@ -41,6 +41,17 @@ public class IndustryController {
         }
     }
 
+    @GetMapping("industry/stockInfo/{industryType}/{subIndustryName}")
+    public String getIndustryStockInfo(@PathVariable String industryType, @PathVariable String subIndustryName) {
+        try {
+            Map<String, String> map = industryService.getSubIndustryStockInfo(industryType, subIndustryName);
+            String json = new ObjectMapper().writeValueAsString(map);
+            return json;
+        } catch (JsonProcessingException e) {
+            return "";
+        }
+    }
+
     @GetMapping("industry/sub/{industryType}")
     public String getSubIndustryInfo(@PathVariable String industryType) {
         try {
@@ -55,6 +66,11 @@ public class IndustryController {
     @GetMapping("industry/growth/{industryType}")
     public Float getIndustryGrowth(@PathVariable String industryType) {
         return industryService.getIndustryGrowth(industryType).floatValue();
+    }
+
+    @GetMapping("industry/growth/{industryType}/{subIndustryName}")
+    public Float getIndustryGrowth(@PathVariable String industryType, @PathVariable String subIndustryName) {
+        return industryService.getSubIndustryGrowth(industryType, subIndustryName).floatValue();
     }
 
     @GetMapping("industry/growth")

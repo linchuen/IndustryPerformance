@@ -36,11 +36,9 @@ public class IndustryService {
     @Autowired
     StockService stockService;
     @Autowired
-    LocalcacheService localcacheService;
-    @Autowired
     RedisUtility redisUtility;
 
-    private static Integer FAILRATESTANDARD = 70;
+    private static final Integer FAILRATESTANDARD = 70;
     private String today = LocalDate.now().toString();
 
     public void biuldAllIndustryInfo() {
@@ -130,7 +128,7 @@ public class IndustryService {
                 Industry industry = (Industry) redisUtility.valueObjectGet(key, Industry.class);
                 industrylist.add(industry);
             } else {
-                synchronized (localcacheService.getIndustryLock(industryType)) {
+                synchronized (LocalcacheService.getIndustryLock(industryType)) {
                     if (redisUtility.hasKey(key)) {
                         log.info("取得 Industry: {} redis synchronized資訊", industryType);
                         Industry industry = (Industry) redisUtility.valueObjectGet(key, Industry.class);
@@ -154,7 +152,7 @@ public class IndustryService {
             log.info("取得 IndustryStockInfo: {} redis資訊", industryType);
             return redisUtility.Map(key).entries();
         } else {
-            synchronized (localcacheService.getIndustryLock(industryType)) {
+            synchronized (LocalcacheService.getIndustryLock(industryType)) {
                 if (redisUtility.hasKey(key)) {
                     log.info("取得 IndustryStockInfo: {} redis synchronized資訊", industryType);
                     return redisUtility.Map(key).entries();
@@ -183,7 +181,7 @@ public class IndustryService {
             log.info("取得 SubIndustryInfo: {} redis資訊", industryType);
             return redisUtility.Set(key).members();
         } else {
-            synchronized (localcacheService.getIndustryLock(industryType)) {
+            synchronized (LocalcacheService.getIndustryLock(industryType)) {
                 if (redisUtility.hasKey(key)) {
                     log.info("取得 SubIndustryInfo: {} redis synchronized資訊", industryType);
                     return redisUtility.Set(key).members();
@@ -211,7 +209,7 @@ public class IndustryService {
             log.info("取得SubIndustryStockInfo: {} {} redis資訊", industryType, subIndustryName);
             return redisUtility.Map(key).entries();
         } else {
-            synchronized (localcacheService.getSubIndustryLock(subIndustryName)) {
+            synchronized (LocalcacheService.getSubIndustryLock(subIndustryName)) {
                 if (redisUtility.hasKey(key)) {
                     log.info("取得SubIndustryStockInfo: {} {} redis synchronized資訊", industryType, subIndustryName);
                     return redisUtility.Map(key).entries();
