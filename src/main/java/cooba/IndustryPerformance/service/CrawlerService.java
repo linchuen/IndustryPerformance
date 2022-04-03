@@ -27,6 +27,7 @@ public class CrawlerService {
     RedisUtility redisUtility;
 
     private static Boolean PRIAMRYSOURCE = true;
+    private static Integer WAITTIME = 1000;
 
     public List<SubIndustry> crawlIndustry(String siteurl) {
         List<SubIndustry> subIndustryList = new ArrayList<>();
@@ -96,6 +97,7 @@ public class CrawlerService {
                     .createdTime(LocalDate.now())
                     .build();
             log.info("爬蟲 {} {} 成功", stockcode, name);
+            Thread.sleep(WAITTIME);
             return stock;
         } catch (Exception e) {
             log.warn("{}爬取失敗", stockcode);
@@ -135,6 +137,7 @@ public class CrawlerService {
                     .createdTime(LocalDate.now())
                     .build();
             log.info("爬蟲 {} {} 成功", stockcode, name);
+            Thread.sleep(WAITTIME);
             return stock;
         } catch (Exception e) {
             log.warn("{}爬取失敗", stockcode);

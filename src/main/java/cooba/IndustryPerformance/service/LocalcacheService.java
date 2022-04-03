@@ -102,16 +102,12 @@ public class LocalcacheService {
         industryRepository.findAll().forEach(industry ->
                 industry.getSubIndustries().forEach(subIndustry ->
                         subIndustry.getCompanies().forEach(stock -> {
-                                    try {
-                                        if (!stockDetailRepository.findByStockcodeAndCreatedTime(stock.getStockcode(), LocalDate.now()).isPresent()) {
-                                            StockDetail stockDetail = crawlerService.crawlSecondarySourceStock(stock.getStockcode());
-                                            if (stockDetail != null) {
-                                                stockDetailRepository.save(stockDetail);
-                                            }
-                                            Thread.sleep(500);
+                                    if (!stockDetailRepository.findByStockcodeAndCreatedTime(stock.getStockcode(), LocalDate.now()).isPresent()) {
+                                        StockDetail stockDetail = crawlerService.crawlSecondarySourceStock(stock.getStockcode());
+                                        if (stockDetail != null) {
+                                            stockDetailRepository.save(stockDetail);
                                         }
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
+
                                     }
                                 }
                         )

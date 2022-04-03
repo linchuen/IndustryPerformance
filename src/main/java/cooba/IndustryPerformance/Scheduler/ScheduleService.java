@@ -1,6 +1,7 @@
-package cooba.IndustryPerformance.service;
+package cooba.IndustryPerformance.Scheduler;
 
 import cooba.IndustryPerformance.enums.UrlEnum;
+import cooba.IndustryPerformance.service.IndustryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,6 @@ public class ScheduleService {
     private void buildIndustryStockDetailInfo() throws InterruptedException {
         for (UrlEnum urlEnum : UrlEnum.values()) {
             industryService.buildIndustryStockDetailInfo(urlEnum.name());
-            Thread.sleep(5 * 60 * 1000);
         }
     }
 }
