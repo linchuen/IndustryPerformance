@@ -113,7 +113,7 @@ public class CrawlerService {
             String name = infodoc.select("#main-2-QuoteProfile-Proxy > div > section:nth-child(1) > div.table-grid.row-fit-half > div:nth-child(1) > div > div").text();
             String stockurl = String.format("https://tw.stock.yahoo.com/quote/%s.TW", stockcode);
             Document doc = Jsoup.connect(stockurl).get();
-            Element table = doc.getElementsByClass("#qsp-overview-realtime-info > div:nth-child(2) > div > div > ul").get(0);
+            Element table = doc.select("#qsp-overview-realtime-info > div:nth-child(2) > div > div > ul").get(0);
             String price = table.select("li:nth-child(1) > span:nth-child(2)").text();
             String lastprice = table.select("li:nth-child(7) > span:nth-child(2)").text();
             String open = table.select("li:nth-child(2) > span:nth-child(2)").text();
@@ -146,5 +146,10 @@ public class CrawlerService {
     public void changeSource() {
         PRIAMRYSOURCE = !PRIAMRYSOURCE;
         log.info("爬蟲訊號源改變 {}", PRIAMRYSOURCE ? "goodinfo.tw" : "tw.stock.yahoo.com");
+    }
+
+    public static void main(String[] args) {
+        CrawlerService crawlerService = new CrawlerService();
+        System.out.println(crawlerService.crawlSecondarySourceStock("2330"));
     }
 }

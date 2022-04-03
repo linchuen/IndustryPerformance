@@ -40,7 +40,7 @@ public class LocalcacheService {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start("biuldAllIndustryInfo");
         log.info("Start biuldAllIndustryInfo");
-        biuldAllIndustryInfo();
+        //biuldAllIndustryInfo();
         stopWatch.stop();
         log.info("Task:{} 總夠耗時:{}", stopWatch.getLastTaskName(), stopWatch.getLastTaskTimeMillis());
         stopWatch.start("buildtodayStockDetail");
@@ -107,7 +107,8 @@ public class LocalcacheService {
                                             Thread.sleep(1000);
                                         }
                                     } catch (InterruptedException e) {
-                                        e.printStackTrace();
+                                        stockDetailRepository.deleteByStockcodeAndCreatedTime(stock.getStockcode(), LocalDate.now());
+                                        crawlerService.crawlSecondarySourceStock(stock.getStockcode());
                                     }
                                 }
                         )
