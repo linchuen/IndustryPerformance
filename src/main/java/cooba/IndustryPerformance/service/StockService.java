@@ -1,7 +1,9 @@
 package cooba.IndustryPerformance.service;
 
 import cooba.IndustryPerformance.constant.RedisConstant;
+import cooba.IndustryPerformance.database.entity.StockBasicInfo.StockBasicInfo;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
+import cooba.IndustryPerformance.database.repository.StockBasicInfoRepository;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import cooba.IndustryPerformance.utility.RedisUtility;
 import lombok.extern.slf4j.Slf4j;
@@ -19,11 +21,36 @@ public class StockService {
     @Autowired
     StockDetailRepository stockDetailRepository;
     @Autowired
+    StockBasicInfoRepository stockBasicInfoRepository;
+    @Autowired
     CrawlerService crawlerService;
     @Autowired
     RedisUtility redisUtility;
 
     private String today = LocalDate.now().toString();
+
+    public StockBasicInfo buildStockBasicInfo(String stockcode) {
+        synchronized (LocalcacheService.getStockcodeLock(stockcode)) {
+            return stockBasicInfoRepository.findByStockcode(stockcode)
+                    .orElseGet(() -> {
+                        StockBasicInfo stockBasicInfo = crawlerService.crawlStockBasicInfo(stockcode);
+                        if (stockBasicInfo == null) {
+                            redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
+                            return null;
+                        } else if (stockBasicInfo.getCompanyType().equals("興櫃")) {
+                            redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode);
+                        }
+                        try {
+                            stockBasicInfoRepository.save(stockBasicInfo);
+                            log.info("股票基本資料: {} 寫入mongodb成功", stockcode);
+                            return stockBasicInfo;
+                        } catch (Exception e) {
+                            log.warn("股票代碼:{} 寫入mongodb失敗", stockcode);
+                            return null;
+                        }
+                    });
+        }
+    }
 
     @Async("stockExecutor")
     public StockDetail asyncBuildStockDetail(String stockcode) {

@@ -1,6 +1,5 @@
 package cooba.IndustryPerformance.service;
 
-import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.database.entity.Industry.Industry;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
@@ -35,8 +34,6 @@ public class LocalcacheService {
     @PostConstruct
     public void init() {
         log.info("init");
-        stockDetailRepository.findByCompanyType("興櫃")
-                .forEach(stockDetail -> redisUtility.valueSet(RedisConstant.BLACKLIST + stockDetail.getStockcode(), stockDetail.getStockcode()));
         industryLock = Arrays.stream(UrlEnum.values()).map(o -> o.name()).collect(Collectors.toList());
         updateStockcodeLockMap();
     }

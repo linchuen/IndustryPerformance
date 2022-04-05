@@ -59,6 +59,9 @@ public class CrawlerService {
     }
 
     public StockDetail crawlStock(String stockcode) {
+        if (redisUtility.hasKey(RedisConstant.BLACKLIST + stockcode)) {
+            return null;
+        }
         Random random = new Random();
         int i = random.nextInt(2);
         StockDetail stockDetail;
@@ -102,7 +105,7 @@ public class CrawlerService {
                     .tradingVolume(Integer.parseInt(tradingVolume))
                     .createdTime(LocalDate.now())
                     .build();
-            log.info("爬蟲 {} {} 成功", stockcode, name);
+            log.info("爬蟲 GoodInfo {} {} 成功", stockcode, name);
             Thread.sleep(WAITTIME);
             return stock;
         } catch (Exception e) {
@@ -140,7 +143,7 @@ public class CrawlerService {
                     .tradingVolume(Integer.parseInt(tradingVolume))
                     .createdTime(LocalDate.now())
                     .build();
-            log.info("爬蟲 {} {} 成功", stockcode, name);
+            log.info("爬蟲 Yahoo {} {} 成功", stockcode, name);
             Thread.sleep(WAITTIME);
             return stock;
         } catch (Exception e) {
@@ -177,7 +180,7 @@ public class CrawlerService {
                     .tradingVolume(Integer.parseInt(tradingVolume))
                     .createdTime(LocalDate.now())
                     .build();
-            log.info("爬蟲 {} {} 成功", stockcode, name);
+            log.info("爬蟲 Anue {} {} 成功", stockcode, name);
             Thread.sleep(WAITTIME);
             return stock;
         } catch (Exception e) {
@@ -203,9 +206,10 @@ public class CrawlerService {
                     .createdTime(LocalDate.now())
                     .build();
 
-            log.info("爬蟲 {} {} 成功", stockcode, name);
+            log.info("爬蟲 {} {} 基本資料成功", stockcode, name);
             return stockBasicInfo;
         } catch (Exception e) {
+            log.warn("爬蟲 {} 基本資料失敗", stockcode);
             return null;
         }
     }
