@@ -3,6 +3,7 @@ package cooba.IndustryPerformance.service;
 import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.database.entity.Industry.Stock;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
+import cooba.IndustryPerformance.database.entity.StockBasicInfo.StockBasicInfo;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
 import cooba.IndustryPerformance.utility.RedisUtility;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -26,8 +28,7 @@ public class CrawlerService {
     @Autowired
     RedisUtility redisUtility;
 
-    private static Boolean PRIAMRYSOURCE = true;
-    private static Integer WAITTIME = 1000;
+    private static final Integer WAITTIME = 2000;
 
     public List<SubIndustry> crawlIndustry(String siteurl) {
         List<SubIndustry> subIndustryList = new ArrayList<>();
@@ -58,14 +59,21 @@ public class CrawlerService {
     }
 
     public StockDetail crawlStock(String stockcode) {
-        if (PRIAMRYSOURCE) {
-            return crawlPriamrySourceStock(stockcode);
-        } else {
-            return crawlSecondarySourceStock(stockcode);
+        Random random = new Random();
+        int i = random.nextInt(2);
+        StockDetail stockDetail;
+        stockDetail = i == 1 ? crawlAnueSourceStock(stockcode) : crawlYahooSourceStock(stockcode);
+        stockDetail = stockDetail == null ? i == 0 ? crawlYahooSourceStock(stockcode) : crawlAnueSourceStock(stockcode) : stockDetail;
+        stockDetail = stockDetail == null ? crawlGoodInfoSourceStock(stockcode) : stockDetail;
+
+        if (stockDetail == null) {
+            log.warn("{}爬取失敗", stockcode);
+            redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
         }
+        return stockDetail;
     }
 
-    public StockDetail crawlPriamrySourceStock(String stockcode) {
+    public StockDetail crawlGoodInfoSourceStock(String stockcode) {
         String stockurl = String.format("https://goodinfo.tw/tw/StockDetail.asp?STOCK_ID=%s", stockcode);
         try {
             Document doc = Jsoup.connect(stockurl).get();
@@ -80,7 +88,6 @@ public class CrawlerService {
             String highest = table.select("tbody > tr:nth-child(3) > td:nth-child(7)").text();
             String lowest = table.select("tbody > tr:nth-child(3) > td:nth-child(8)").text();
             String tradingVolume = table.select(" tbody > tr:nth-child(5) > td:nth-child(3)").text().replace(",", "");
-            String tradingPiece = table.select(" tbody > tr:nth-child(5) > td:nth-child(1)").text().replace(",", "");
 
             StockDetail stock = StockDetail.builder()
                     .stockcode(stockcode)
@@ -93,20 +100,17 @@ public class CrawlerService {
                     .highest(new BigDecimal(highest))
                     .lowest(new BigDecimal(lowest))
                     .tradingVolume(Integer.parseInt(tradingVolume))
-                    .tradingPiece(Integer.parseInt(tradingPiece))
                     .createdTime(LocalDate.now())
                     .build();
             log.info("爬蟲 {} {} 成功", stockcode, name);
             Thread.sleep(WAITTIME);
             return stock;
         } catch (Exception e) {
-            log.warn("{}爬取失敗", stockcode);
-            redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
             return null;
         }
     }
 
-    public StockDetail crawlSecondarySourceStock(String stockcode) {
+    public StockDetail crawlYahooSourceStock(String stockcode) {
         try {
             String infostockurl = String.format("https://tw.stock.yahoo.com/quote/%s/profile", stockcode);
             Document infodoc = Jsoup.connect(infostockurl).get();
@@ -140,19 +144,70 @@ public class CrawlerService {
             Thread.sleep(WAITTIME);
             return stock;
         } catch (Exception e) {
-            log.warn("{}爬取失敗", stockcode);
-            redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
             return null;
         }
     }
 
-    public void changeSource() {
-        PRIAMRYSOURCE = !PRIAMRYSOURCE;
-        log.info("爬蟲訊號源改變 {}", PRIAMRYSOURCE ? "goodinfo.tw" : "tw.stock.yahoo.com");
+    public StockDetail crawlAnueSourceStock(String stockcode) {
+        try {
+            String infostockurl = String.format("https://tw.stock.yahoo.com/quote/%s/profile", stockcode);
+            Document infodoc = Jsoup.connect(infostockurl).get();
+            String industryType = infodoc.select("#main-2-QuoteProfile-Proxy > div > section:nth-child(1) > div.table-grid.row-fit-half > div:nth-child(9) > div > div").text();
+            String companyType = infodoc.select(" #main-2-QuoteProfile-Proxy > div > section:nth-child(1) > div.table-grid.row-fit-half > div:nth-child(20) > div > div").text();
+            String name = infodoc.select("#main-2-QuoteProfile-Proxy > div > section:nth-child(1) > div.table-grid.row-fit-half > div:nth-child(1) > div > div").text();
+            String stockurl = String.format("https://invest.cnyes.com/twstock/TWS/%s", stockcode);
+            Document doc = Jsoup.connect(stockurl).get();
+            String price = doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[2]/div[2]/div/div[6]/div[2]", stockcode)).text();
+            String lastprice = doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[2]/div[2]/div/div[4]/div[2]", stockcode)).text();
+            String open = doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[2]/div[2]/div/div[5]/div[2]", stockcode)).text();
+            String highest = doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[2]/div[2]/div/div[2]/div[2]", stockcode)).text().split("- ")[1];
+            String lowest = doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[2]/div[2]/div/div[2]/div[2]", stockcode)).text().split("- ")[0];
+            String tradingVolume = doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[2]/div[2]/div/div[1]/div[2]", stockcode)).text().replaceAll("[, 張]", "");
+
+            StockDetail stock = StockDetail.builder()
+                    .stockcode(stockcode)
+                    .name(name)
+                    .industryType(industryType)
+                    .companyType(companyType)
+                    .price(new BigDecimal(Float.valueOf(price)))
+                    .lastprice(new BigDecimal(Float.valueOf(lastprice)))
+                    .open(new BigDecimal(Float.valueOf(open)))
+                    .highest(new BigDecimal(Float.valueOf(highest)))
+                    .lowest(new BigDecimal(Float.valueOf(lowest)))
+                    .tradingVolume(Integer.parseInt(tradingVolume))
+                    .createdTime(LocalDate.now())
+                    .build();
+            log.info("爬蟲 {} {} 成功", stockcode, name);
+            Thread.sleep(WAITTIME);
+            return stock;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
-    public static void main(String[] args) {
-        CrawlerService crawlerService = new CrawlerService();
-        System.out.println(crawlerService.crawlSecondarySourceStock("2330"));
+    public StockBasicInfo crawlStockBasicInfo(String stockcode) {
+        try {
+            String infostockurl = String.format("https://tw.stock.yahoo.com/quote/%s/profile", stockcode);
+            Document infodoc = Jsoup.connect(infostockurl).get();
+            String companyType = infodoc.selectXpath("//*[@id='main-2-QuoteProfile-Proxy']/div/section[1]/div[2]/div[20]/div/div").text();
+            String industryType = infodoc.selectXpath("//*[@id='main-2-QuoteProfile-Proxy']/div/section[1]/div[2]/div[9]/div/div").text();
+            String name = infodoc.selectXpath("//*[@id='main-2-QuoteProfile-Proxy']/div/section[1]/div[2]/div[1]/div/div").text();
+            String desciption = infodoc.selectXpath("//*[@id='main-2-QuoteProfile-Proxy']/div/section[1]/div[3]/div").text();
+
+            StockBasicInfo stockBasicInfo = StockBasicInfo.builder()
+                    .stockcode(stockcode)
+                    .name(name)
+                    .industryType(industryType)
+                    .companyType(companyType)
+                    .desciption(desciption)
+                    .createdTime(LocalDate.now())
+                    .build();
+
+            log.info("爬蟲 {} {} 成功", stockcode, name);
+            return stockBasicInfo;
+        } catch (Exception e) {
+            return null;
+        }
     }
+
 }

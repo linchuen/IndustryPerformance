@@ -13,7 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StopWatch;
 
+import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -22,7 +24,6 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -41,10 +42,33 @@ public class IndustryService {
     private static final Integer FAILRATESTANDARD = 70;
     private String today = LocalDate.now().toString();
 
+    @PostConstruct
+    public void init() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start("biuldAllIndustryInfo");
+        log.info("Start biuldAllIndustryInfo");
+        biuldAllIndustryInfo();
+        stopWatch.stop();
+        log.info("Task:{} 總夠耗時:{}", stopWatch.getLastTaskName(), stopWatch.getLastTaskTimeMillis() / 1000);
+        stopWatch.start("buildtodayStockDetail");
+        log.info("Start buildtodayStockDetail");
+        buildtodayStockDetail();
+        stopWatch.stop();
+        log.info("Task:{} 總夠耗時:{}", stopWatch.getLastTaskName(), stopWatch.getLastTaskTimeMillis() / 1000);
+    }
+
     public void biuldAllIndustryInfo() {
         UrlEnum[] urlEnums = UrlEnum.values();
         for (UrlEnum urlEnum : urlEnums) {
             asyncBuildIndustryInfo(urlEnum.name());
+        }
+    }
+
+    public void buildtodayStockDetail() {
+        UrlEnum[] urlEnums = UrlEnum.values();
+        for (UrlEnum urlEnum : urlEnums) {
+            buildIndustryStockDetailInfo(urlEnum.name());
+            log.info("{}:{}", urlEnum.name(), getIndustryGrowth(urlEnum.name()));
         }
     }
 
@@ -87,7 +111,6 @@ public class IndustryService {
 
     public void buildIndustryStockDetailInfo(String industryType) {
         Map<String, String> industryStockMap = getIndustryStockInfo(industryType);
-        AtomicInteger failCount = new AtomicInteger(0);
         if (industryStockMap.isEmpty()) {
             log.warn("industryStockMap 為空");
             return;
@@ -97,19 +120,10 @@ public class IndustryService {
             completableFutures.add(CompletableFuture.supplyAsync(
                     () -> {
                         StockDetail stockDetail = stockService.buildStockDetail(k);
-                        if (stockDetail == null) {
-                            failCount.incrementAndGet();
-                        }
                         return stockDetail;
-                    }, Executors.newFixedThreadPool(5)));
+                    }, Executors.newFixedThreadPool(3)));
         });
         CompletableFuture.allOf(completableFutures.toArray(new CompletableFuture[0])).join();
-        int failrate = 100 * failCount.get() / industryStockMap.size();
-        if (failrate > FAILRATESTANDARD) {
-            log.warn("buildIndustryStockDetailInfo 失敗率> 70% 產業: {}", industryType);
-            crawlerService.changeSource();
-            redisUtility.delete(RedisConstant.BLACKLIST + "*");
-        }
         log.info("buildIndustryStockDetailInfo 成功");
     }
 

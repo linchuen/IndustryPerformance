@@ -1,11 +1,9 @@
-package cooba.IndustryPerformance.database.entity.StockDetail;
+package cooba.IndustryPerformance.database.entity.StockBasicInfo;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.io.Serializable;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
@@ -14,18 +12,13 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Getter
 @Document
-public class StockDetail implements Serializable {
+public class StockBasicInfo {
     @Id
     private String id;
     private String stockcode;
     private String name;
     private String industryType;
     private String companyType;
-    private BigDecimal price;
-    private BigDecimal lastprice;
-    private BigDecimal open;
-    private BigDecimal highest;
-    private BigDecimal lowest;
-    private int tradingVolume;
+    private String desciption;
     private LocalDate createdTime;
 }
