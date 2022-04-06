@@ -13,5 +13,6 @@ spring.data:
       max-active: 8
       max-wait: -1
 logging:
+
   level:
     org.springframework.data.mongodb.core.MongoTemplate: DEBUG

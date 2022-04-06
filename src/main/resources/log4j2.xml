@@ -37,7 +37,7 @@
     <Appenders>
         <!-- 控制檯輸出 appender，SYSTEM_OUT輸出黑色，SYSTEM_ERR輸出紅色 -->
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%20t] %-5level %c{-10}[%M]%L - %msg%n"/>
+            <PatternLayout pattern="%d %-5level [%10t] %c{1} %L -%msg%n"/>
         </Console>
 
         <!-- 日誌檔案輸出 appender -->
@@ -66,7 +66,7 @@
             <AppenderRef ref="Console"/>
         </AsyncLogger>
         <!-- 使用 rootLogger 配置 日誌級別 level="trace" -->
-        <Root level="debug">
+        <Root level="info">
             <!-- 指定日誌使用的處理器 -->
             <AppenderRef ref="Console"/>
             <!-- 使用非同步 appender -->
