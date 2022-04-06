@@ -29,13 +29,17 @@ public class StockService {
 
     private String today = LocalDate.now().toString();
 
+    @Async("stockExecutor")
+    public StockBasicInfo asyncBuildStockBasicInfo(String stockcode) {
+        return buildStockBasicInfo(stockcode);
+    }
+
     public StockBasicInfo buildStockBasicInfo(String stockcode) {
         synchronized (LocalcacheService.getStockcodeLock(stockcode)) {
             return stockBasicInfoRepository.findByStockcode(stockcode)
                     .orElseGet(() -> {
                         StockBasicInfo stockBasicInfo = crawlerService.crawlStockBasicInfo(stockcode);
                         if (stockBasicInfo == null) {
-                            redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
                             return null;
                         } else if (stockBasicInfo.getCompanyType().equals("興櫃")) {
                             redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode);

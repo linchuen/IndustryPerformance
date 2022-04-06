@@ -92,7 +92,7 @@ public class IndustryService {
 
         subIndustryList.forEach(subIndustry -> subIndustry.getCompanies()
                 .forEach(stock -> {
-                    stockService.buildStockBasicInfo(stock.getStockcode());
+                    stockService.asyncBuildStockBasicInfo(stock.getStockcode());
                     redisUtility.setAdd(RedisConstant.INDUSTRYINFO + industryType + ":subIndustry", subIndustry.getSubIndustryName());
                     redisUtility.mapPut(RedisConstant.INDUSTRYINFO + industryType + ":" + subIndustry.getSubIndustryName(), stock.getStockcode(), stock.getName());
                     redisUtility.mapPut(RedisConstant.INDUSTRYINFO + industryType, stock.getStockcode(), stock.getName());
