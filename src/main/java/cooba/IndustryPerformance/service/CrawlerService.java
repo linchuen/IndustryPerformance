@@ -220,7 +220,7 @@ public class CrawlerService {
         }
     }
 
-    public static StockBasicInfo crawlGoodInfoStockBasicInfo(String stockcode) {
+    public StockBasicInfo crawlGoodInfoStockBasicInfo(String stockcode) {
         String stockurl = String.format("https://goodinfo.tw/tw/StockDetail.asp?STOCK_ID=%s", stockcode);
         try {
             Document doc = Jsoup.connect(stockurl).get();
@@ -254,6 +254,6 @@ public class CrawlerService {
     }
 
     public static void main(String[] args) {
-        System.out.println(crawlGoodInfoStockBasicInfo("2330"));
+        //System.out.println(crawlGoodInfoStockBasicInfo("2330"));
     }
 }
