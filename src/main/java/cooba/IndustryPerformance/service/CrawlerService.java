@@ -115,11 +115,12 @@ public class CrawlerService {
 
     public StockDetail crawlYahooSourceStock(String stockcode) {
         try {
-            String infostockurl = String.format("https://tw.stock.yahoo.com/quote/%s/profile", stockcode);
-            Document infodoc = Jsoup.connect(infostockurl).get();
-            String industryType = infodoc.select("#main-2-QuoteProfile-Proxy > div > section:nth-child(1) > div.table-grid.row-fit-half > div:nth-child(9) > div > div").text();
-            String companyType = infodoc.select(" #main-2-QuoteProfile-Proxy > div > section:nth-child(1) > div.table-grid.row-fit-half > div:nth-child(20) > div > div").text();
-            String name = infodoc.select("#main-2-QuoteProfile-Proxy > div > section:nth-child(1) > div.table-grid.row-fit-half > div:nth-child(1) > div > div").text();
+            StockBasicInfo stockBasicInfo;
+            try {
+                stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
+            } catch (Exception e) {
+                stockBasicInfo = crawlStockBasicInfo(stockcode);
+            }
             String stockurl = String.format("https://tw.stock.yahoo.com/quote/%s.TW", stockcode);
             Document doc = Jsoup.connect(stockurl).get();
             Element table = doc.select("#qsp-overview-realtime-info > div:nth-child(2) > div > div > ul").get(0);
@@ -132,9 +133,9 @@ public class CrawlerService {
 
             StockDetail stock = StockDetail.builder()
                     .stockcode(stockcode)
-                    .name(name)
-                    .industryType(industryType)
-                    .companyType(companyType)
+                    .name(stockBasicInfo.getName())
+                    .industryType(stockBasicInfo.getIndustryType())
+                    .companyType(stockBasicInfo.getCompanyType())
                     .price(new BigDecimal(price))
                     .lastprice(new BigDecimal(lastprice))
                     .open(new BigDecimal(open))
@@ -143,7 +144,7 @@ public class CrawlerService {
                     .tradingVolume(Integer.parseInt(tradingVolume))
                     .createdTime(LocalDate.now())
                     .build();
-            log.info("爬蟲 Yahoo {} {} 成功", stockcode, name);
+            log.info("爬蟲 Yahoo {} {} 成功", stockcode, stockBasicInfo.getName());
             Thread.sleep(WAITTIME);
             return stock;
         } catch (Exception e) {
@@ -153,11 +154,12 @@ public class CrawlerService {
 
     public StockDetail crawlAnueSourceStock(String stockcode) {
         try {
-            String infostockurl = String.format("https://tw.stock.yahoo.com/quote/%s/profile", stockcode);
-            Document infodoc = Jsoup.connect(infostockurl).get();
-            String industryType = infodoc.select("#main-2-QuoteProfile-Proxy > div > section:nth-child(1) > div.table-grid.row-fit-half > div:nth-child(9) > div > div").text();
-            String companyType = infodoc.select(" #main-2-QuoteProfile-Proxy > div > section:nth-child(1) > div.table-grid.row-fit-half > div:nth-child(20) > div > div").text();
-            String name = infodoc.select("#main-2-QuoteProfile-Proxy > div > section:nth-child(1) > div.table-grid.row-fit-half > div:nth-child(1) > div > div").text();
+            StockBasicInfo stockBasicInfo;
+            try {
+                stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
+            } catch (Exception e) {
+                stockBasicInfo = crawlStockBasicInfo(stockcode);
+            }
             String stockurl = String.format("https://invest.cnyes.com/twstock/TWS/%s", stockcode);
             Document doc = Jsoup.connect(stockurl).get();
             String price = doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[2]/div[2]/div/div[6]/div[2]", stockcode)).text();
@@ -169,9 +171,9 @@ public class CrawlerService {
 
             StockDetail stock = StockDetail.builder()
                     .stockcode(stockcode)
-                    .name(name)
-                    .industryType(industryType)
-                    .companyType(companyType)
+                    .name(stockBasicInfo.getName())
+                    .industryType(stockBasicInfo.getIndustryType())
+                    .companyType(stockBasicInfo.getCompanyType())
                     .price(new BigDecimal(Float.valueOf(price)))
                     .lastprice(new BigDecimal(Float.valueOf(lastprice)))
                     .open(new BigDecimal(Float.valueOf(open)))
@@ -180,7 +182,7 @@ public class CrawlerService {
                     .tradingVolume(Integer.parseInt(tradingVolume))
                     .createdTime(LocalDate.now())
                     .build();
-            log.info("爬蟲 Anue {} {} 成功", stockcode, name);
+            log.info("爬蟲 Anue {} {} 成功", stockcode, stockBasicInfo.getName());
             Thread.sleep(WAITTIME);
             return stock;
         } catch (Exception e) {
@@ -212,6 +214,7 @@ public class CrawlerService {
                     .createdTime(LocalDate.now())
                     .build();
 
+            redisUtility.valueObjectSet(RedisConstant.STOCKBASICINFO + stockcode, stockBasicInfo);
             log.info("爬蟲 Yahoo {} {} 基本資料成功", stockcode, name);
             return stockBasicInfo;
         } catch (Exception e) {
@@ -245,6 +248,7 @@ public class CrawlerService {
                     .createdTime(LocalDate.now())
                     .build();
 
+            redisUtility.valueObjectSet(RedisConstant.STOCKBASICINFO + stockcode, stockBasicInfo);
             log.info("爬蟲 GoodInfo {} {} 基本資料成功", stockcode, name);
             return stockBasicInfo;
         } catch (Exception e) {
