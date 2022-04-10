@@ -215,12 +215,12 @@ public class CrawlerService {
             log.info("爬蟲 Yahoo {} {} 基本資料成功", stockcode, name);
             return stockBasicInfo;
         } catch (Exception e) {
-            log.warn("爬蟲 Yahoo{} 基本資料失敗", stockcode);
+            log.warn("爬蟲 Yahoo {} 基本資料失敗", stockcode);
             return null;
         }
     }
 
-    public StockBasicInfo crawlGoodInfoStockBasicInfo(String stockcode) {
+    public static StockBasicInfo crawlGoodInfoStockBasicInfo(String stockcode) {
         String stockurl = String.format("https://goodinfo.tw/tw/StockDetail.asp?STOCK_ID=%s", stockcode);
         try {
             Document doc = Jsoup.connect(stockurl).get();
@@ -229,7 +229,12 @@ public class CrawlerService {
             String companyType = infotable.select(" tbody > tr:nth-child(4) > td:nth-child(2) > nobr").text();
             String desciption = infotable.select(" tbody > tr:nth-child(15) > td > p").text();
             Element table = doc.getElementsByClass("b1 p4_2 r10").get(0);
-            String name = table.select("tbody > tr > td:nth-child(1) > nobr > a").text().split(" ")[1];
+            String name = "";
+            try {
+                name = table.select("tbody > tr > td:nth-child(1) > nobr > a").text().split(" ")[1];
+            } catch (ArrayIndexOutOfBoundsException arrayIndexOutOfBoundsException) {
+                name = table.select("tbody > tr > th > span:nth-child(1) > a").text().split(" ")[1];
+            }
 
             StockBasicInfo stockBasicInfo = StockBasicInfo.builder()
                     .stockcode(stockcode)
@@ -243,12 +248,12 @@ public class CrawlerService {
             log.info("爬蟲 GoodInfo {} {} 基本資料成功", stockcode, name);
             return stockBasicInfo;
         } catch (Exception e) {
-            log.warn("爬蟲 GoodInfo{} 基本資料失敗", stockcode);
+            log.warn("爬蟲 GoodInfo {} 基本資料失敗", stockcode);
             return null;
         }
     }
 
     public static void main(String[] args) {
-        //System.out.println(crawlGoodInfoStockBasicInfo("6550"));
+        System.out.println(crawlGoodInfoStockBasicInfo("2330"));
     }
 }
