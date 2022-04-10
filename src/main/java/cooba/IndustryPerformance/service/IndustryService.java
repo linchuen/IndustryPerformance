@@ -292,7 +292,14 @@ public class IndustryService {
             }
         }
         BigDecimal result = new BigDecimal(0);
-        BigDecimal growth = result.add(price.get()).subtract(last_n_daysPrice.get()).divide(last_n_daysPrice.get(), 4, RoundingMode.HALF_UP);
+        BigDecimal growth = new BigDecimal(0);
+        try {
+            growth = result.add(price.get()).subtract(last_n_daysPrice.get()).divide(last_n_daysPrice.get(), 4, RoundingMode.HALF_UP);
+        } catch (ArithmeticException exception) {
+            growth = new BigDecimal(0);
+            log.info("產業:{} 漲幅:{} 今日股價和:{} {}日股價和:{} 列表:{}", industryType, growth, price.get(), days, last_n_daysPrice.get(), stocklist);
+            redisUtility.valueSet(RedisConstant.GROWTH + industryType + ":" + today, String.valueOf(growth));
+        }
         log.info("產業:{} 漲幅:{} 今日股價和:{} {}日股價和:{} 列表:{}", industryType, growth, price.get(), days, last_n_daysPrice.get(), stocklist);
         redisUtility.valueSet(RedisConstant.GROWTH + industryType + ":" + today, String.valueOf(growth));
         return growth;

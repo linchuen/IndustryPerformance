@@ -189,6 +189,12 @@ public class CrawlerService {
     }
 
     public StockBasicInfo crawlStockBasicInfo(String stockcode) {
+        StockBasicInfo stockBasicInfo = crawlYahooStockBasicInfo(stockcode);
+        stockBasicInfo = stockBasicInfo == null ? crawlGoodInfoStockBasicInfo(stockcode) : stockBasicInfo;
+        return stockBasicInfo;
+    }
+
+    public StockBasicInfo crawlYahooStockBasicInfo(String stockcode) {
         try {
             String infostockurl = String.format("https://tw.stock.yahoo.com/quote/%s/profile", stockcode);
             Document infodoc = Jsoup.connect(infostockurl).get();
@@ -206,11 +212,43 @@ public class CrawlerService {
                     .createdTime(LocalDate.now())
                     .build();
 
-            log.info("爬蟲 {} {} 基本資料成功", stockcode, name);
+            log.info("爬蟲 Yahoo {} {} 基本資料成功", stockcode, name);
             return stockBasicInfo;
         } catch (Exception e) {
-            log.warn("爬蟲 {} 基本資料失敗", stockcode);
+            log.warn("爬蟲 Yahoo{} 基本資料失敗", stockcode);
             return null;
         }
+    }
+
+    public StockBasicInfo crawlGoodInfoStockBasicInfo(String stockcode) {
+        String stockurl = String.format("https://goodinfo.tw/tw/StockDetail.asp?STOCK_ID=%s", stockcode);
+        try {
+            Document doc = Jsoup.connect(stockurl).get();
+            Element infotable = doc.getElementsByClass("b1 p4_4 r10").get(0);
+            String industryType = infotable.select("tbody > tr:nth-child(3) > td:nth-child(2)").text();
+            String companyType = infotable.select(" tbody > tr:nth-child(4) > td:nth-child(2) > nobr").text();
+            String desciption = infotable.select(" tbody > tr:nth-child(15) > td > p").text();
+            Element table = doc.getElementsByClass("b1 p4_2 r10").get(0);
+            String name = table.select("tbody > tr > td:nth-child(1) > nobr > a").text().split(" ")[1];
+
+            StockBasicInfo stockBasicInfo = StockBasicInfo.builder()
+                    .stockcode(stockcode)
+                    .name(name)
+                    .industryType(industryType)
+                    .companyType(companyType)
+                    .desciption(desciption)
+                    .createdTime(LocalDate.now())
+                    .build();
+
+            log.info("爬蟲 GoodInfo {} {} 基本資料成功", stockcode, name);
+            return stockBasicInfo;
+        } catch (Exception e) {
+            log.warn("爬蟲 GoodInfo{} 基本資料失敗", stockcode);
+            return null;
+        }
+    }
+
+    public static void main(String[] args) {
+        //System.out.println(crawlGoodInfoStockBasicInfo("6550"));
     }
 }

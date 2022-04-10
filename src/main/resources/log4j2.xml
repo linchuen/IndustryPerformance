@@ -40,6 +40,9 @@
             <PatternLayout pattern="%d %-5level [%10t] %c{1} %L -%msg%n"/>
         </Console>
 
+        <Socket name="Socket" host="127.0.0.1" port="5000" protocol="TCP">
+            <PatternLayout pattern="%d %-5level [%10t] %c{1} %L -%msg%n"/>
+        </Socket>
         <!-- 日誌檔案輸出 appender -->
         <RollingRandomAccessFile name="RollingRandomAccessFile" fileName="${LOG_HOME}/${FILE_NAME}.log"
                                  filePattern="${LOG_HOME}/$${date:yyyy-MM}/${FILE_NAME}-%d{yyyy-MM-dd HH-mm}-%i.log">
@@ -69,6 +72,7 @@
         <Root level="info">
             <!-- 指定日誌使用的處理器 -->
             <AppenderRef ref="Console"/>
+            <AppenderRef ref="Socket"/>
             <!-- 使用非同步 appender -->
             <AppenderRef ref="Async"/>
         </Root>

@@ -15,4 +15,9 @@ public class crawlTest {
     public void singletest() {
         crawlerService.crawlIndustry(UrlEnum.軟體服務.getUrl());
     }
+
+    @Test
+    public void crawlGoodInfoStockBasicInfo() {
+        System.out.println(crawlerService.crawlGoodInfoStockBasicInfo("6550"));
+    }
 }
