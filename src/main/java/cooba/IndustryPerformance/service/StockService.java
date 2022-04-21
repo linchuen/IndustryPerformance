@@ -74,13 +74,16 @@ public class StockService {
                         }
                         try {
                             stockDetailRepository.save(stockDetail);
-                            stockDetail.setId(LocalDate.now().toString() + stockcode);
-                            stockDetailMapper.insertStockDetail(stockDetail);
+                            try {
+                                stockDetailMapper.insertStockDetail(stockDetail);
+                                log.info("股票代碼:{} 寫入mysql成功", stockcode);
+                            } catch (Exception e) {
+                                log.warn("股票代碼:{} 寫入mysql失敗", stockcode);
+                            }
                             log.info("股票代碼:{} 寫入mongodb成功", stockcode);
                             redisUtility.valueObjectSet(RedisConstant.STOCKDETAIL + today + ":" + stockcode, stockDetail, 90, TimeUnit.DAYS);
                             return stockDetail;
                         } catch (Exception e) {
-                            e.printStackTrace();
                             log.warn("股票代碼:{} 寫入mongodb失敗", stockcode);
                             redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
                             return null;
