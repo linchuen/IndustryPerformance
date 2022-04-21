@@ -51,7 +51,7 @@ public class industryTest {
         log.info(stopWatch.prettyPrint());
     }
 
-    //@Test
+    @Test
     public void buildIndustryStockDetailInfoTest() {
         //stockService.deleteAllStockDetail();
         StopWatch stopWatch = new StopWatch("Async");

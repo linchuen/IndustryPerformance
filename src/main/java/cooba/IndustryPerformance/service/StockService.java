@@ -3,6 +3,7 @@ package cooba.IndustryPerformance.service;
 import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.database.entity.StockBasicInfo.StockBasicInfo;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
+import cooba.IndustryPerformance.database.mapper.StockDetailMapper;
 import cooba.IndustryPerformance.database.repository.StockBasicInfoRepository;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import cooba.IndustryPerformance.utility.RedisUtility;
@@ -20,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 public class StockService {
     @Autowired
     StockDetailRepository stockDetailRepository;
+    @Autowired
+    StockDetailMapper stockDetailMapper;
     @Autowired
     StockBasicInfoRepository stockBasicInfoRepository;
     @Autowired
@@ -71,10 +74,13 @@ public class StockService {
                         }
                         try {
                             stockDetailRepository.save(stockDetail);
+                            stockDetail.setId(LocalDate.now().toString() + stockcode);
+                            stockDetailMapper.insertStockDetail(stockDetail);
                             log.info("股票代碼:{} 寫入mongodb成功", stockcode);
                             redisUtility.valueObjectSet(RedisConstant.STOCKDETAIL + today + ":" + stockcode, stockDetail, 90, TimeUnit.DAYS);
                             return stockDetail;
                         } catch (Exception e) {
+                            e.printStackTrace();
                             log.warn("股票代碼:{} 寫入mongodb失敗", stockcode);
                             redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
                             return null;
