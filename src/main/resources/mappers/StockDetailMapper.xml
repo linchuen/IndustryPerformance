@@ -3,6 +3,7 @@
 <!-- namespace 對應持久層的介面 -->
 <mapper namespace="cooba.IndustryPerformance.database.mapper.StockDetailMapper">
     <resultMap type="cooba.IndustryPerformance.database.entity.StockDetail.StockDetail" id="stockdetail">
+        <result column="id" property="id"/>
         <result column="stockcode" property="stockcode"/>
         <result column="name" property="name"/>
         <result column="industryType" property="industryType"/>
@@ -14,14 +15,21 @@
         <result column="lowest" property="lowest"/>
         <result column="tradingVolume" property="tradingVolume"/>
         <result column="createdTime" property="createdTime"/>
-        <result column="成交股數" property="sharesTraded"/>
-        <result column="成交金額" property="turnover"/>
+        <result column="sharesTraded" property="sharesTraded"/>
+        <result column="turnover" property="turnover"/>
     </resultMap>
 
-    <insert id="insertStockDetail" parameterType="cooba.IndustryPerformance.database.entity.StockDetail.StockDetail"
-            useGeneratedKeys="true" keyProperty="id">
-        insert into
-        StockDetail(stockcode,name,industryType,companyType,price,lastprice,open,highest,lowest,tradingVolume,createdTime)
-        values(#{stockcode},#{name},#{industryType},#{companyType},#{price},#{lastprice},#{open},#{highest},#{lowest},#{tradingVolume},#{createdTime})
+    <insert id="insertStockDetail" parameterType="cooba.IndustryPerformance.database.entity.StockDetail.StockDetail">
+        INSERT INTO
+        StockDetail(id, stockcode, name, industryType, companyType, price, lastprice, open, highest, lowest,
+        tradingVolume, createdTime, sharesTraded, turnover)
+        VALUES(#{id}, #{stockcode}, #{name}, #{industryType}, #{companyType}, #{price}, #{lastprice}, #{open},
+        #{highest}, #{lowest}, #{tradingVolume}, #{createdTime}, #{sharesTraded}, #{turnover})
+        ON DUPLICATE KEY UPDATE price=#{price}, lastprice=#{lastprice}, open=#{open}, highest=#{highest},
+        lowest=#{lowest}, tradingVolume=#{tradingVolume}
     </insert>
+
+    <select id="findStockDetail" resultType="long">
+        SELECT id FROM StockDetail WHERE stockcode=#{stockcode} AND createdTime=#{createdTime}
+    </select>
 </mapper>

@@ -1,6 +1,5 @@
 package cooba.IndustryPerformance.database.entity.StockDetail;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -28,8 +27,6 @@ public class StockDetail {
     private BigDecimal lowest;
     private int tradingVolume;
     private LocalDate createdTime;
-    @JsonIgnore
     private Long sharesTraded;
-    @JsonIgnore
     private Long turnover;
 }

@@ -1,4 +1,4 @@
-package cooba.IndustryPerformance.Scheduler;
+package cooba.IndustryPerformance.scheduler;
 
 import cooba.IndustryPerformance.service.IndustryService;
 import org.springframework.beans.factory.annotation.Autowired;

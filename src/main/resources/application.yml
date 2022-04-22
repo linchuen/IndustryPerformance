@@ -27,6 +27,9 @@ spring:
         max-wait: -1
 mybatis:
   mapper-locations: classpath:mappers/*xml
+stock:
+  csv:
+    path: "D:\\"
 logging:
   level:
     org.springframework.data.mongodb.core.MongoTemplate: DEBUG

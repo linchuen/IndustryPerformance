@@ -52,7 +52,7 @@ public class StockService {
                             log.info("股票基本資料: {} 寫入mongodb成功", stockcode);
                             return stockBasicInfo;
                         } catch (Exception e) {
-                            log.warn("股票代碼:{} 寫入mongodb失敗", stockcode);
+                            log.warn("股票代碼:{} 寫入mongodb失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
                             return null;
                         }
                     });
@@ -76,15 +76,15 @@ public class StockService {
                             stockDetailRepository.save(stockDetail);
                             try {
                                 stockDetailMapper.insertStockDetail(stockDetail);
-                                log.info("股票代碼:{} 寫入mysql成功", stockcode);
+                                log.info("股票代碼:{} 交易日期:{} 寫入mysql成功", stockcode, stockDetail.getCreatedTime());
                             } catch (Exception e) {
-                                log.warn("股票代碼:{} 寫入mysql失敗", stockcode);
+                                log.warn("股票代碼:{} 寫入mysql失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
                             }
-                            log.info("股票代碼:{} 寫入mongodb成功", stockcode);
+                            log.info("股票代碼:{} 交易日期:{} 寫入mongodb成功", stockcode, stockDetail.getCreatedTime());
                             redisUtility.valueObjectSet(RedisConstant.STOCKDETAIL + today + ":" + stockcode, stockDetail, 90, TimeUnit.DAYS);
                             return stockDetail;
                         } catch (Exception e) {
-                            log.warn("股票代碼:{} 寫入mongodb失敗", stockcode);
+                            log.warn("股票代碼:{} 寫入mongodb失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
                             redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
                             return null;
                         }

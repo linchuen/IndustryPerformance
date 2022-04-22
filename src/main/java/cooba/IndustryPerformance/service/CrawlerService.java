@@ -53,7 +53,7 @@ public class CrawlerService {
             }
             log.info("爬蟲 {} 成功", siteurl);
         } catch (IOException e) {
-            log.warn("{}", e.getMessage());
+            log.warn("class:{} error:{}", getClass().getName(), e.getMessage());
         }
         return subIndustryList;
     }
@@ -109,6 +109,7 @@ public class CrawlerService {
             Thread.sleep(WAITTIME);
             return stock;
         } catch (Exception e) {
+            log.warn("class:{} error:{}", getClass().getName(), e.getMessage());
             return null;
         }
     }
@@ -145,6 +146,7 @@ public class CrawlerService {
             Thread.sleep(WAITTIME);
             return stock;
         } catch (Exception e) {
+            log.warn("class:{} error:{}", getClass().getName(), e.getMessage());
             return null;
         }
     }
@@ -153,7 +155,7 @@ public class CrawlerService {
         try {
             StockBasicInfo stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
             stockBasicInfo = stockBasicInfo == null ? crawlStockBasicInfo(stockcode) : null;
-            
+
             String stockurl = String.format("https://invest.cnyes.com/twstock/TWS/%s", stockcode);
             Document doc = Jsoup.connect(stockurl).get();
             String price = doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[2]/div[2]/div/div[6]/div[2]", stockcode)).text();
@@ -180,6 +182,7 @@ public class CrawlerService {
             Thread.sleep(WAITTIME);
             return stock;
         } catch (Exception e) {
+            log.warn("class:{} error:{}", getClass().getName(), e.getMessage());
             return null;
         }
     }
@@ -212,7 +215,7 @@ public class CrawlerService {
             log.info("爬蟲 Yahoo {} {} 基本資料成功", stockcode, name);
             return stockBasicInfo;
         } catch (Exception e) {
-            log.warn("爬蟲 Yahoo {} 基本資料失敗", stockcode);
+            log.warn("爬蟲 Yahoo {} 基本資料失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
             return null;
         }
     }
@@ -246,7 +249,7 @@ public class CrawlerService {
             log.info("爬蟲 GoodInfo {} {} 基本資料成功", stockcode, name);
             return stockBasicInfo;
         } catch (Exception e) {
-            log.warn("爬蟲 GoodInfo {} 基本資料失敗", stockcode);
+            log.warn("爬蟲 GoodInfo {} 基本資料失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
             return null;
         }
     }
