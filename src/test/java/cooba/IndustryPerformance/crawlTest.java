@@ -18,6 +18,21 @@ public class crawlTest {
 
     @Test
     public void crawlGoodInfoStockBasicInfo() {
-        System.out.println(crawlerService.crawlGoodInfoStockBasicInfo("6550"));
+        System.out.println(crawlerService.crawlGoodInfoStockBasicInfo("2330"));
+    }
+
+    @Test
+    public void crawlAnueSourceStock() {
+        System.out.println(crawlerService.crawlAnueSourceStock("2330"));
+    }
+
+    @Test
+    public void crawlYahooSourceStock() {
+        System.out.println(crawlerService.crawlYahooSourceStock("2330"));
+    }
+
+    @Test
+    public void crawlStockBasicInfo() {
+        System.out.println(crawlerService.crawlStockBasicInfo("2330"));
     }
 }

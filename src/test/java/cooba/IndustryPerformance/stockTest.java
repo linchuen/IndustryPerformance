@@ -12,6 +12,6 @@ public class stockTest {
 
     @Test
     public void Test() {
-        stockService.buildStockDetail("2330");
+        stockService.buildStockDetail("3008");
     }
 }

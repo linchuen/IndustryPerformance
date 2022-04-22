@@ -14,6 +14,8 @@
         <result column="lowest" property="lowest"/>
         <result column="tradingVolume" property="tradingVolume"/>
         <result column="createdTime" property="createdTime"/>
+        <result column="成交股數" property="sharesTraded"/>
+        <result column="成交金額" property="turnover"/>
     </resultMap>
 
     <insert id="insertStockDetail" parameterType="cooba.IndustryPerformance.database.entity.StockDetail.StockDetail"

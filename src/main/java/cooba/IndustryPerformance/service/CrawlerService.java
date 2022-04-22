@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -116,12 +115,9 @@ public class CrawlerService {
 
     public StockDetail crawlYahooSourceStock(String stockcode) {
         try {
-            StockBasicInfo stockBasicInfo;
-            try {
-                stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
-            } catch (Exception e) {
-                stockBasicInfo = crawlStockBasicInfo(stockcode);
-            }
+            StockBasicInfo stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
+            stockBasicInfo = stockBasicInfo == null ? crawlStockBasicInfo(stockcode) : null;
+
             String stockurl = String.format("https://tw.stock.yahoo.com/quote/%s.TW", stockcode);
             Document doc = Jsoup.connect(stockurl).get();
             Element table = doc.select("#qsp-overview-realtime-info > div:nth-child(2) > div > div > ul").get(0);
@@ -155,12 +151,9 @@ public class CrawlerService {
 
     public StockDetail crawlAnueSourceStock(String stockcode) {
         try {
-            StockBasicInfo stockBasicInfo;
-            try {
-                stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
-            } catch (Exception e) {
-                stockBasicInfo = crawlStockBasicInfo(stockcode);
-            }
+            StockBasicInfo stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
+            stockBasicInfo = stockBasicInfo == null ? crawlStockBasicInfo(stockcode) : null;
+            
             String stockurl = String.format("https://invest.cnyes.com/twstock/TWS/%s", stockcode);
             Document doc = Jsoup.connect(stockurl).get();
             String price = doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[2]/div[2]/div/div[6]/div[2]", stockcode)).text();
@@ -256,56 +249,5 @@ public class CrawlerService {
             log.warn("爬蟲 GoodInfo {} 基本資料失敗", stockcode);
             return null;
         }
-    }
-
-    public void crawlGoodInfo3MonthsStockDetail(String stockcode) {
-        String stockurl = String.format("https://goodinfo.tw/tw/ShowK_Chart.asp?STOCK_ID=%S&CHT_CAT2=DATE", stockcode);
-        try {
-            StockBasicInfo stockBasicInfo;
-            try {
-                stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
-            } catch (Exception e) {
-                stockBasicInfo = crawlStockBasicInfo(stockcode);
-            }
-            Document doc = Jsoup.connect(stockurl).get();
-            Element table = doc.getElementById("tblPriceDetail");
-            Elements tr = table.select("tr");
-            StockBasicInfo finalStockBasicInfo = stockBasicInfo;
-            tr.forEach(td -> {
-                if(td.select("td").size()==22){
-                    String createdTime=td.select("td:nth-child(1)").text();
-                    if(Integer.parseInt(createdTime.split("/")[0])>LocalDate.now().getMonthValue()){
-                        createdTime=(LocalDate.now().getYear()-1)+"/"+createdTime;
-                    }else{
-                        createdTime=(LocalDate.now().getYear())+"/"+createdTime;
-                    }
-                    String open = td.select("td:nth-child(2)").text();
-                    String highest = td.select("td:nth-child(3)").text();
-                    String lowest = td.select("td:nth-child(4)").text();
-                    String price = td.select("td:nth-child(5)").text();
-                    String tradingVolume = td.select("td:nth-child(10)").text().replace(",", "");
-
-                    StockDetail stock = StockDetail.builder()
-                            .stockcode(stockcode)
-                            .name(finalStockBasicInfo.getName())
-                            .industryType(finalStockBasicInfo.getIndustryType())
-                            .companyType(finalStockBasicInfo.getCompanyType())
-                            .price(new BigDecimal(price))
-                            .open(new BigDecimal(open))
-                            .highest(new BigDecimal(highest))
-                            .lowest(new BigDecimal(lowest))
-                            .tradingVolume(Integer.parseInt(tradingVolume))
-                            .createdTime(LocalDate.parse(createdTime, DateTimeFormatter.ofPattern("yyyy/MM/dd")))
-                            .build();
-                }
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    public static void main(String[] args) {
-
     }
 }
