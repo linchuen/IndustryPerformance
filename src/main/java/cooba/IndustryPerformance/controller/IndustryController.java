@@ -37,7 +37,7 @@ public class IndustryController {
             String json = new ObjectMapper().writeValueAsString(map);
             return json;
         } catch (JsonProcessingException e) {
-            return "";
+            return e.getMessage();
         }
     }
 
@@ -48,18 +48,18 @@ public class IndustryController {
             String json = new ObjectMapper().writeValueAsString(map);
             return json;
         } catch (JsonProcessingException e) {
-            return "";
+            return e.getMessage();
         }
     }
 
-    @GetMapping("industry/sub/{industryType}")
+    @GetMapping("industry/subtype/{industryType}")
     public String getSubIndustryInfo(@PathVariable String industryType) {
         try {
             Set<String> set = industryService.getSubIndustryInfo(industryType);
             String json = new ObjectMapper().writeValueAsString(set);
             return json;
         } catch (JsonProcessingException e) {
-            return "";
+            return e.getMessage();
         }
     }
 

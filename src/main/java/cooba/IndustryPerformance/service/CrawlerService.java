@@ -60,6 +60,7 @@ public class CrawlerService {
 
     public StockDetail crawlStock(String stockcode) {
         if (redisUtility.hasKey(RedisConstant.BLACKLIST + stockcode)) {
+            log.warn("crawlStock {} 在黑名單中", stockcode);
             return null;
         }
         Random random = new Random();

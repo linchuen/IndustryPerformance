@@ -22,6 +22,11 @@ public class crawlTest {
     }
 
     @Test
+    public void crawlStock() {
+        System.out.println(crawlerService.crawlStock("2330"));
+    }
+
+    @Test
     public void crawlAnueSourceStock() {
         System.out.println(crawlerService.crawlAnueSourceStock("2330"));
     }

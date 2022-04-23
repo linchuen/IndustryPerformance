@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
@@ -33,23 +34,34 @@ public class DownloadStockCsvService {
     @Autowired
     StockDetailMapper stockDetailMapper;
 
-    public void downloadStockCsv(String stockcode, LocalDate date) {
-        try {
-            WebDriverManager.chromedriver().setup();
-            HashMap<String, Object> chromePrefs = new HashMap<String, Object>();
-            chromePrefs.put("download.default_directory", csvPath);
-            ChromeOptions chromeOptions = new ChromeOptions();
-            chromeOptions.addArguments("--headless");
-            chromeOptions.addArguments("--disable-gpu");
-            chromeOptions.setExperimentalOption("prefs", chromePrefs);
-            WebDriver driver = new ChromeDriver(chromeOptions);
-            String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-            driver.get(String.format("https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=csv&date=%s&stockNo=%s", dateStr, stockcode));
-            Thread.sleep(300);
-            driver.quit();
-        } catch (Exception e) {
-            log.warn("downloadCsv失敗 class:{} error:{}", getClass().getName(), e.getMessage());
+    public boolean downloadStockCsv(String stockcode, LocalDate date) {
+        String filePath = String.format("%s\\STOCK_DAY_%s_%s.csv", csvPath, stockcode, date.format(DateTimeFormatter.ofPattern("yyyyMM")));
+        File file = new File(filePath);
+        if (!file.exists()) {
+            try {
+                WebDriverManager.chromedriver().setup();
+                HashMap<String, Object> chromePrefs = new HashMap<String, Object>();
+                chromePrefs.put("download.default_directory", csvPath);
+                ChromeOptions chromeOptions = new ChromeOptions();
+                chromeOptions.addArguments("--headless");
+                chromeOptions.addArguments("--disable-gpu");
+                chromeOptions.setExperimentalOption("prefs", chromePrefs);
+                WebDriver driver = new ChromeDriver(chromeOptions);
+                String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                driver.get(String.format("https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=csv&date=%s&stockNo=%s", dateStr, stockcode));
+                Thread.sleep(300);
+                driver.quit();
+                if (file.exists()) {
+                    log.info("downloadCsv成功 {}", file.getName());
+                    return true;
+                }
+                return false;
+            } catch (Exception e) {
+                log.warn("downloadCsv失敗 class:{} error:{}", getClass().getName(), e.getMessage());
+                return false;
+            }
         }
+        return true;
     }
 
     public void readCsvToDB(String stockcode, LocalDate date) {
