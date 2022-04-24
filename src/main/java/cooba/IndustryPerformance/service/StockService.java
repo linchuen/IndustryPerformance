@@ -76,6 +76,9 @@ public class StockService {
                             return null;
                         }
                         try {
+                            stockDetailRepository.save(stockDetail);
+                            log.info("股票代碼:{} 交易日期:{} 寫入mongodb成功", stockcode, stockDetail.getCreatedTime());
+                            redisUtility.valueObjectSet(RedisConstant.STOCKDETAIL + today + ":" + stockcode, stockDetail, 90, TimeUnit.DAYS);
                             try {
                                 stockDetail.setId(stockDetail.getCreatedTime().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode);
                                 stockDetailMapper.insertStockDetail(stockDetail);
@@ -83,9 +86,6 @@ public class StockService {
                             } catch (Exception e) {
                                 log.warn("股票代碼:{} 寫入mysql失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
                             }
-                            stockDetailRepository.save(stockDetail);
-                            log.info("股票代碼:{} 交易日期:{} 寫入mongodb成功", stockcode, stockDetail.getCreatedTime());
-                            redisUtility.valueObjectSet(RedisConstant.STOCKDETAIL + today + ":" + stockcode, stockDetail, 90, TimeUnit.DAYS);
                             return stockDetail;
                         } catch (Exception e) {
                             log.warn("股票代碼:{} 寫入mongodb失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
