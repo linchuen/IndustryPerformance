@@ -119,14 +119,21 @@ public class DownloadStockCsvService {
                         .industryType(finalIndustryType)
                         .companyType(finalCompanyType)
                         .build();
-                if (!stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, createdTime).isPresent()) {
-                    try {
-                        stockDetailRepository.save(stockDetail);
-                        log.info("股票代碼:{} 交易日期:{} 寫入mongodb成功", stockcode, stockDetail.getCreatedTime());
-                    } catch (Exception e) {
-                        log.warn("股票代碼:{} 寫入mongodb失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
-                    }
-                }
+                stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, createdTime).ifPresentOrElse(
+                        oldStockDetail -> {
+                            stockDetail.setId(oldStockDetail.getId());
+                            stockDetailRepository.save(stockDetail);
+                            log.info("股票代碼:{} 交易日期:{} 更新mongodb成功", stockcode, stockDetail.getCreatedTime());
+                        },
+                        () -> {
+                            try {
+                                stockDetailRepository.save(stockDetail);
+                                log.info("股票代碼:{} 交易日期:{} 寫入mongodb成功", stockcode, stockDetail.getCreatedTime());
+                            } catch (Exception e) {
+                                log.warn("股票代碼:{} 寫入mongodb失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
+                            }
+                        }
+                );
 
                 try {
                     stockDetail.setId(createdTime.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode);
@@ -137,8 +144,8 @@ public class DownloadStockCsvService {
                 }
 
             });
-
-        } catch (Exception e) {
+        } catch (
+                Exception e) {
             log.warn("readCsvToDB失敗 class:{} error:{}", getClass().getName(), e.getMessage());
         }
     }
