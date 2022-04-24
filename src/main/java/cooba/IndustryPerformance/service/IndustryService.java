@@ -4,8 +4,10 @@ import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.database.entity.Industry.Industry;
 import cooba.IndustryPerformance.database.entity.Industry.Stock;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
+import cooba.IndustryPerformance.database.entity.StockBasicInfo.StockBasicInfo;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
+import cooba.IndustryPerformance.database.repository.StockBasicInfoRepository;
 import cooba.IndustryPerformance.enums.UrlEnum;
 import cooba.IndustryPerformance.utility.RedisUtility;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import static cooba.IndustryPerformance.constant.StockConstant.LISTED;
+import static cooba.IndustryPerformance.constant.StockConstant.OTC;
+
 @Slf4j
 @Service
 public class IndustryService {
@@ -33,6 +38,8 @@ public class IndustryService {
     CrawlerService crawlerService;
     @Autowired
     IndustryRepository industryRepository;
+    @Autowired
+    StockBasicInfoRepository stockBasicInfoRepository;
     @Autowired
     StockService stockService;
     @Autowired
@@ -247,11 +254,6 @@ public class IndustryService {
     }
 
     public BigDecimal getGrowth(String industryType, int days, Map<String, String> StockMap) {
-        if (redisUtility.hasKey(RedisConstant.GROWTH + industryType + ":" + today)) {
-            log.info("取得Growth: {} redis資訊", industryType);
-            BigDecimal growth = new BigDecimal(redisUtility.valueGet(RedisConstant.GROWTH + industryType + ":" + today));
-            return growth;
-        }
         List<String> stocklist = new ArrayList<>();
         if (StockMap.isEmpty()) {
             log.warn("StockMap 為空");
@@ -291,34 +293,110 @@ public class IndustryService {
             }
         }
         BigDecimal result = new BigDecimal(0);
-        BigDecimal growth = new BigDecimal(0);
+        BigDecimal growth;
         try {
             growth = result.add(price.get()).subtract(last_n_daysPrice.get()).divide(last_n_daysPrice.get(), 4, RoundingMode.HALF_UP);
         } catch (ArithmeticException exception) {
             growth = new BigDecimal(0);
-            log.info("產業:{} 漲幅:{} 今日股價和:{} {}日股價和:{} 列表:{}", industryType, growth, price.get(), days, last_n_daysPrice.get(), stocklist);
-            redisUtility.valueSet(RedisConstant.GROWTH + industryType + ":" + today, String.valueOf(growth));
         }
-        log.info("產業:{} 漲幅:{} 今日股價和:{} {}日股價和:{} 列表:{}", industryType, growth, price.get(), days, last_n_daysPrice.get(), stocklist);
-        redisUtility.valueSet(RedisConstant.GROWTH + industryType + ":" + today, String.valueOf(growth));
         return growth;
     }
 
     public BigDecimal getIndustryGrowth(String industryType) {
-        return getIndustry_n_DaysGrowth(1, industryType);
+        return getIndustry_n_DaysGrowth(1, industryType, "");
     }
 
-    public BigDecimal getIndustry_n_DaysGrowth(int days, String industryType) {
-        BigDecimal growth = getGrowth(industryType, days, getIndustryStockInfo(industryType));
+    public BigDecimal getIndustryGrowth(String industryType, String companyType) {
+        return getIndustry_n_DaysGrowth(1, industryType, companyType);
+    }
+    
+    public BigDecimal getIndustry_n_DaysGrowth(int days, String industryType, String companyType) {
+        String key = RedisConstant.GROWTH + industryType + ":" + companyType + ":" + today;
+        if (redisUtility.hasKey(key)) {
+            log.info("取得Growth: {} redis資訊", industryType);
+            BigDecimal growth = new BigDecimal(redisUtility.valueGet(key));
+            return growth;
+        }
+        Map<String, String> stockMap = getIndustryStockInfo(industryType);
+        List<String> stocklist;
+        Map<String, String> newstockMap;
+        BigDecimal growth;
+        switch (companyType) {
+            case LISTED:
+                stocklist = stockBasicInfoRepository.findByCompanyType(LISTED)
+                        .stream()
+                        .map(StockBasicInfo::getStockcode)
+                        .collect(Collectors.toList());
+                newstockMap = stockMap.entrySet().stream().filter(entry -> stocklist.contains(entry.getKey())).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+                growth = getGrowth(industryType, days, newstockMap);
+                redisUtility.valueSet(key, String.valueOf(growth));
+                log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, industryType, days, growth, stocklist);
+                break;
+            case OTC:
+                stocklist = stockBasicInfoRepository.findByCompanyType(OTC)
+                        .stream()
+                        .map(StockBasicInfo::getStockcode)
+                        .collect(Collectors.toList());
+                newstockMap = stockMap.entrySet().stream().filter(entry -> stocklist.contains(entry.getKey())).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+                growth = getGrowth(industryType, days, newstockMap);
+                redisUtility.valueSet(key, String.valueOf(growth));
+                log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, industryType, days, growth, stocklist);
+                break;
+            default:
+                growth = getGrowth(industryType, days, stockMap);
+                redisUtility.valueSet(key, String.valueOf(growth));
+                log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, industryType, days, growth, stockMap);
+                break;
+        }
         return growth;
     }
 
     public BigDecimal getSubIndustryGrowth(String industryType, String subIndustryName) {
-        return getSubIndustry_n_DaysGrowth(1, industryType, subIndustryName);
+        return getSubIndustry_n_DaysGrowth(1, industryType, subIndustryName, "");
     }
 
-    public BigDecimal getSubIndustry_n_DaysGrowth(int days, String industryType, String subIndustryName) {
-        BigDecimal growth = getGrowth(subIndustryName, days, getSubIndustryStockInfo(industryType, subIndustryName));
+    public BigDecimal getSubIndustryGrowth(String industryType, String subIndustryName, String companyType) {
+        return getSubIndustry_n_DaysGrowth(1, industryType, subIndustryName, companyType);
+    }
+
+    public BigDecimal getSubIndustry_n_DaysGrowth(int days, String industryType, String subIndustryName, String companyType) {
+        String key = RedisConstant.GROWTH + industryType + ":" + subIndustryName + ":" + companyType + ":" + today;
+        if (redisUtility.hasKey(key)) {
+            log.info("取得Growth: {} redis資訊", industryType);
+            BigDecimal growth = new BigDecimal(redisUtility.valueGet(key));
+            return growth;
+        }
+        Map<String, String> stockMap = getSubIndustryStockInfo(industryType, subIndustryName);
+        List<String> stocklist;
+        Map<String, String> newstockMap;
+        BigDecimal growth;
+        switch (companyType) {
+            case LISTED:
+                stocklist = stockBasicInfoRepository.findByCompanyType(LISTED)
+                        .stream()
+                        .map(StockBasicInfo::getStockcode)
+                        .collect(Collectors.toList());
+                newstockMap = stockMap.entrySet().stream().filter(entry -> stocklist.contains(entry.getKey())).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+                growth = getGrowth(subIndustryName, days, newstockMap);
+                redisUtility.valueSet(key, String.valueOf(growth));
+                log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, subIndustryName, days, growth, stocklist);
+                break;
+            case OTC:
+                stocklist = stockBasicInfoRepository.findByCompanyType(OTC)
+                        .stream()
+                        .map(StockBasicInfo::getStockcode)
+                        .collect(Collectors.toList());
+                newstockMap = stockMap.entrySet().stream().filter(entry -> stocklist.contains(entry.getKey())).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+                growth = getGrowth(subIndustryName, days, newstockMap);
+                redisUtility.valueSet(key, String.valueOf(growth));
+                log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, subIndustryName, days, growth, stocklist);
+                break;
+            default:
+                growth = getGrowth(subIndustryName, days, stockMap);
+                redisUtility.valueSet(key, String.valueOf(growth));
+                log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, subIndustryName, days, growth, stockMap);
+                break;
+        }
         return growth;
     }
 }

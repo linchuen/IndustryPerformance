@@ -28,6 +28,8 @@ public class StockService {
     @Autowired
     CrawlerService crawlerService;
     @Autowired
+    SkipDateService skipDateService;
+    @Autowired
     RedisUtility redisUtility;
 
     private String today = LocalDate.now().toString();
@@ -98,7 +100,10 @@ public class StockService {
 
     public Optional<StockDetail> getStockDetailLast_n_day(String stockcode, int days) {
         LocalDate localDate = LocalDate.now().minusDays(days);
-        String key = RedisConstant.STOCKDETAIL + localDate.toString() + ":" + stockcode;
+        while (skipDateService.isSkipDate(localDate)) {
+            localDate = localDate.minusDays(1);
+        }
+        String key = RedisConstant.STOCKDETAIL + localDate + ":" + stockcode;
 
         if (redisUtility.hasKey(key)) {
             log.info("取得 StockDetail: {} redis資訊", stockcode);
@@ -113,7 +118,7 @@ public class StockService {
                 } else {
                     log.info("取得 StockDetail: {} mongodb資訊", stockcode);
                     Optional<StockDetail> stockDetailOptional = stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, localDate);
-                    stockDetailOptional.ifPresent(stockDetail -> redisUtility.valueObjectSet(key, stockDetail));
+                    stockDetailOptional.ifPresent(stockDetail -> redisUtility.valueObjectSet(key, stockDetail, 90, TimeUnit.DAYS));
                     return stockDetailOptional;
                 }
             }
@@ -122,5 +127,35 @@ public class StockService {
 
     public void deleteAllStockDetail() {
         stockDetailRepository.deleteAll();
+    }
+
+    public String getCompanyType(String stockcode) {
+        String key = RedisConstant.STOCKBASICINFO + stockcode;
+
+        if (redisUtility.hasKey(key)) {
+            return (String) redisUtility.Map(key).entries().get("CompanyType");
+        } else {
+            synchronized (LocalcacheService.getStockcodeLock(stockcode)) {
+                if (redisUtility.hasKey(key)) {
+                    return (String) redisUtility.Map(key).entries().get("CompanyType");
+                }
+
+                StockBasicInfo stockBasicInfo = stockBasicInfoRepository.findByStockcode(stockcode).orElse(new StockBasicInfo());
+                return stockBasicInfo.getCompanyType();
+            }
+        }
+    }
+
+    public boolean isListed(String stockcode) {
+        return getCompanyType(stockcode).equals("上市") ? true : false;
+    }
+
+    //over-the-counter
+    public boolean isOTC(String stockcode) {
+        return getCompanyType(stockcode).equals("上櫃") ? true : false;
+    }
+
+    public boolean isEmerging(String stockcode) {
+        return getCompanyType(stockcode).equals("興櫃") ? true : false;
     }
 }

@@ -75,7 +75,7 @@ public class IndustryController {
 
     @GetMapping("industry/growth")
     public Float getIndustry_n_DaysGrowth(@RequestParam("Days") int days, @RequestParam("Type") String industryType) {
-        return industryService.getIndustry_n_DaysGrowth(days, industryType).floatValue();
+        return industryService.getIndustry_n_DaysGrowth(days, industryType, "").floatValue();
     }
 
     @DeleteMapping("industry")

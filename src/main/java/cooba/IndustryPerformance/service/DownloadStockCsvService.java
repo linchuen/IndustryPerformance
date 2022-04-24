@@ -1,9 +1,11 @@
 package cooba.IndustryPerformance.service;
 
 import com.opencsv.CSVReader;
+import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
 import cooba.IndustryPerformance.database.mapper.StockDetailMapper;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
+import cooba.IndustryPerformance.utility.RedisUtility;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.WebDriver;
@@ -22,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -33,6 +36,8 @@ public class DownloadStockCsvService {
     StockDetailRepository stockDetailRepository;
     @Autowired
     StockDetailMapper stockDetailMapper;
+    @Autowired
+    RedisUtility redisUtility;
 
     public boolean downloadStockCsv(String stockcode, LocalDate date) {
         String filePath = String.format("%s\\STOCK_DAY_%s_%s.csv", csvPath, stockcode, date.format(DateTimeFormatter.ofPattern("yyyyMM")));
@@ -49,7 +54,7 @@ public class DownloadStockCsvService {
                 WebDriver driver = new ChromeDriver(chromeOptions);
                 String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
                 driver.get(String.format("https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=csv&date=%s&stockNo=%s", dateStr, stockcode));
-                Thread.sleep(300);
+                Thread.sleep(1000);
                 driver.quit();
                 if (file.exists()) {
                     log.info("downloadCsv成功 {}", file.getName());
@@ -67,19 +72,29 @@ public class DownloadStockCsvService {
     public void readCsvToDB(String stockcode, LocalDate date) {
         String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMM"));
         String filePath = String.format("%s\\STOCK_DAY_%s_%s.csv", csvPath, stockcode, dateStr);
+
         try {
             CSVReader openCSVReader = new CSVReader(new InputStreamReader(new FileInputStream(filePath), "Big5"));
             String[] title = openCSVReader.readNext()[0].split(" ");
             String name = title[2];
-
+            String key = RedisConstant.STOCKBASICINFO + stockcode;
+            String industryType = "";
+            String companyType = "";
+            if (redisUtility.hasKey(key)) {
+                Map<String, String> stockMap = redisUtility.Map(key).entries();
+                industryType = String.valueOf(stockMap.get("industryType"));
+                companyType = String.valueOf(stockMap.get("companyType"));
+            }
             List<String[]> list = openCSVReader.readAll();
             list = list.subList(2, list.size() - 5);
+            String finalIndustryType = industryType;
+            String finalCompanyType = companyType;
             list.forEach(records -> {
-                BigDecimal price = BigDecimal.valueOf(Float.valueOf(records[6].replace(",", "")));
-                BigDecimal lastprice = BigDecimal.valueOf(Float.valueOf(records[6].replace(",", "")));
-                BigDecimal open = BigDecimal.valueOf(Float.valueOf(records[3].replace(",", "")));
-                BigDecimal highest = BigDecimal.valueOf(Float.valueOf(records[4].replace(",", "")));
-                BigDecimal lowest = BigDecimal.valueOf(Float.valueOf(records[5].replace(",", "")));
+                BigDecimal price = new BigDecimal(Float.valueOf(records[6].replace(",", "")));
+                BigDecimal lastprice = new BigDecimal(Float.valueOf(records[6].replace(",", "")));
+                BigDecimal open = new BigDecimal(Float.valueOf(records[3].replace(",", "")));
+                BigDecimal highest = new BigDecimal(records[4].replace(",", ""));
+                BigDecimal lowest = new BigDecimal(Float.valueOf(records[5].replace(",", "")));
                 Long sharesTraded = Long.parseLong(records[1].replace(",", ""));
                 Long turnover = Long.parseLong(records[2].replace(",", ""));
                 int tradingVolume = Integer.parseInt(records[8].replace(",", ""));
@@ -101,6 +116,8 @@ public class DownloadStockCsvService {
                         .turnover(turnover)
                         .tradingVolume(tradingVolume)
                         .createdTime(createdTime)
+                        .industryType(finalIndustryType)
+                        .companyType(finalCompanyType)
                         .build();
                 if (!stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, createdTime).isPresent()) {
                     try {
