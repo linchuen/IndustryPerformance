@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -75,13 +76,14 @@ public class StockService {
                             return null;
                         }
                         try {
-                            stockDetailRepository.save(stockDetail);
                             try {
+                                stockDetail.setId(stockDetail.getCreatedTime().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode);
                                 stockDetailMapper.insertStockDetail(stockDetail);
                                 log.info("股票代碼:{} 交易日期:{} 寫入mysql成功", stockcode, stockDetail.getCreatedTime());
                             } catch (Exception e) {
                                 log.warn("股票代碼:{} 寫入mysql失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
                             }
+                            stockDetailRepository.save(stockDetail);
                             log.info("股票代碼:{} 交易日期:{} 寫入mongodb成功", stockcode, stockDetail.getCreatedTime());
                             redisUtility.valueObjectSet(RedisConstant.STOCKDETAIL + today + ":" + stockcode, stockDetail, 90, TimeUnit.DAYS);
                             return stockDetail;
