@@ -17,6 +17,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
+import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -48,19 +49,19 @@ public class IndustryService {
     private static final Integer FAILRATESTANDARD = 70;
     private String today = LocalDate.now().toString();
 
-    //@PostConstruct
+    @PostConstruct
     public void init() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start("biuldAllIndustryInfo");
         log.info("Start biuldAllIndustryInfo");
         biuldAllIndustryInfo();
         stopWatch.stop();
-        log.info("Task:{} 總夠耗時:{}", stopWatch.getLastTaskName(), stopWatch.getLastTaskTimeMillis() / 1000);
+        log.info("Task:{} 總夠耗時:{}s", stopWatch.getLastTaskName(), stopWatch.getLastTaskTimeMillis() / 1000);
         stopWatch.start("buildtodayStockDetail");
         log.info("Start buildtodayStockDetail");
         buildtodayStockDetail();
         stopWatch.stop();
-        log.info("Task:{} 總夠耗時:{}", stopWatch.getLastTaskName(), stopWatch.getLastTaskTimeMillis() / 1000);
+        log.info("Task:{} 總夠耗時:{}s", stopWatch.getLastTaskName(), stopWatch.getLastTaskTimeMillis() / 1000);
     }
 
     public void biuldAllIndustryInfo() {
@@ -309,7 +310,7 @@ public class IndustryService {
     public BigDecimal getIndustryGrowth(String industryType, String companyType) {
         return getIndustry_n_DaysGrowth(1, industryType, companyType);
     }
-    
+
     public BigDecimal getIndustry_n_DaysGrowth(int days, String industryType, String companyType) {
         String key = RedisConstant.GROWTH + industryType + ":" + companyType + ":" + today;
         if (redisUtility.hasKey(key)) {

@@ -3,9 +3,7 @@ package cooba.IndustryPerformance.service;
 import cooba.IndustryPerformance.database.entity.Industry.Industry;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
-import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import cooba.IndustryPerformance.enums.UrlEnum;
-import cooba.IndustryPerformance.utility.RedisUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,13 +17,9 @@ import java.util.stream.Collectors;
 @Service
 public class LocalcacheService {
     @Autowired
-    StockDetailRepository stockDetailRepository;
-    @Autowired
     IndustryRepository industryRepository;
     @Autowired
     CrawlerService crawlerService;
-    @Autowired
-    RedisUtility redisUtility;
 
     public static List<String> industryLock = new ArrayList<>();
     public static List<String> subindustryLock = new ArrayList<>();
