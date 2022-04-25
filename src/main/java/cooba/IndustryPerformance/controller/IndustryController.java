@@ -56,7 +56,7 @@ public class IndustryController {
         }
     }
 
-    @GetMapping("industry/subtype/{industryType}")
+    @GetMapping("industry/subindustry/{industryType}")
     public String getSubIndustryInfo(@PathVariable String industryType) {
         try {
             Set<String> set = industryService.getSubIndustryInfo(industryType);

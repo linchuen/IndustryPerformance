@@ -2,6 +2,7 @@ package cooba.IndustryPerformance.service;
 
 import com.opencsv.CSVReader;
 import cooba.IndustryPerformance.constant.RedisConstant;
+import cooba.IndustryPerformance.database.entity.StockBasicInfo.StockBasicInfo;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
 import cooba.IndustryPerformance.database.mapper.StockDetailMapper;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
@@ -24,7 +25,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -72,6 +72,8 @@ public class DownloadStockCsvService {
     public void readCsvToDB(String stockcode, LocalDate date) {
         String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMM"));
         String filePath = String.format("%s\\STOCK_DAY_%s_%s.csv", csvPath, stockcode, dateStr);
+        File file = new File(filePath);
+        if (file.length() == 0) return;
 
         try {
             CSVReader openCSVReader = new CSVReader(new InputStreamReader(new FileInputStream(filePath), "Big5"));
@@ -81,9 +83,9 @@ public class DownloadStockCsvService {
             String industryType = "";
             String companyType = "";
             if (redisUtility.hasKey(key)) {
-                Map<String, String> stockMap = redisUtility.Map(key).entries();
-                industryType = String.valueOf(stockMap.get("industryType"));
-                companyType = String.valueOf(stockMap.get("companyType"));
+                StockBasicInfo stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
+                industryType = String.valueOf(stockBasicInfo.getIndustryType());
+                companyType = String.valueOf(stockBasicInfo.getIndustryType());
             }
             List<String[]> list = openCSVReader.readAll();
             list = list.subList(2, list.size() - 5);
@@ -142,11 +144,9 @@ public class DownloadStockCsvService {
                 } catch (Exception e) {
                     log.warn("股票代碼:{} 寫入mysql失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
                 }
-
             });
-        } catch (
-                Exception e) {
-            log.warn("readCsvToDB失敗 class:{} error:{}", getClass().getName(), e.getMessage());
+        } catch (Exception e) {
+            log.warn("{} readCsvToDB失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
         }
     }
 }

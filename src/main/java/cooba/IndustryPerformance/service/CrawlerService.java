@@ -123,6 +123,10 @@ public class CrawlerService {
         try {
             StockBasicInfo stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
             stockBasicInfo = stockBasicInfo == null ? crawlStockBasicInfo(stockcode) : stockBasicInfo;
+            if (stockBasicInfo == null) {
+                log.warn("{}股票不存在", stockcode);
+                return null;
+            }
 
             String stockurl = String.format("https://tw.stock.yahoo.com/quote/%s.TW", stockcode);
             Document doc = Jsoup.connect(stockurl)
@@ -163,7 +167,11 @@ public class CrawlerService {
         try {
             StockBasicInfo stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
             stockBasicInfo = stockBasicInfo == null ? crawlStockBasicInfo(stockcode) : null;
-
+            if (stockBasicInfo == null) {
+                log.warn("{}股票不存在", stockcode);
+                return null;
+            }
+            
             String stockurl = String.format("https://invest.cnyes.com/twstock/TWS/%s", stockcode);
             Document doc = Jsoup.connect(stockurl)
                     .userAgent(UA)

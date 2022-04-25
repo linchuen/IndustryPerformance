@@ -25,7 +25,7 @@ public class KafkaReceiver {
             if (stockCsvService.downloadStockCsv(csvInfo.getStockcode(), csvInfo.getDate())) {
                 stockCsvService.readCsvToDB(csvInfo.getStockcode(), csvInfo.getDate());
             }
-            Thread.sleep(1000);
+            Thread.sleep(500);
         } catch (Exception e) {
             log.error("Kafkalistener error record:{} {}", record.value(), e.getMessage());
         }
