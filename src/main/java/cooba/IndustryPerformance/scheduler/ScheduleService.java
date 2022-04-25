@@ -27,7 +27,7 @@ public class ScheduleService {
         industryService.biuldAllIndustryInfo();
     }
 
-    @Scheduled(cron = "0 0 10 * * *")
+    @Scheduled(cron = "0 0 15 * * *")
     private void buildIndustryStockDetailInfo() {
         industryService.buildtodayStockDetail();
     }

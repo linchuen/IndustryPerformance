@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static cooba.IndustryPerformance.constant.StockConstant.LISTEDOTC;
+
 @RestController
 public class IndustryController {
 
@@ -44,6 +46,8 @@ public class IndustryController {
     @GetMapping("industry/stockInfo/{industryType}/{subIndustryName}")
     public String getIndustryStockInfo(@PathVariable String industryType, @PathVariable String subIndustryName) {
         try {
+            //子產業包含/會導致發送request失敗
+            subIndustryName = subIndustryName.replace("->", "/");
             Map<String, String> map = industryService.getSubIndustryStockInfo(industryType, subIndustryName);
             String json = new ObjectMapper().writeValueAsString(map);
             return json;
@@ -70,12 +74,13 @@ public class IndustryController {
 
     @GetMapping("industry/growth/{industryType}/{subIndustryName}")
     public Float getIndustryGrowth(@PathVariable String industryType, @PathVariable String subIndustryName) {
+        subIndustryName = subIndustryName.replace("->", "/");
         return industryService.getSubIndustryGrowth(industryType, subIndustryName).floatValue();
     }
 
     @GetMapping("industry/growth")
     public Float getIndustry_n_DaysGrowth(@RequestParam("Days") int days, @RequestParam("Type") String industryType) {
-        return industryService.getIndustry_n_DaysGrowth(days, industryType, "").floatValue();
+        return industryService.getIndustry_n_DaysGrowth(days, industryType, LISTEDOTC).floatValue();
     }
 
     @DeleteMapping("industry")

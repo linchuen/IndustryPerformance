@@ -29,6 +29,7 @@ public class CrawlerService {
     RedisUtility redisUtility;
 
     private static final Integer WAITTIME = 2000;
+    private static final String UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36";
 
     public List<SubIndustry> crawlIndustry(String siteurl) {
         List<SubIndustry> subIndustryList = new ArrayList<>();
@@ -80,7 +81,10 @@ public class CrawlerService {
     public StockDetail crawlGoodInfoSourceStock(String stockcode) {
         String stockurl = String.format("https://goodinfo.tw/tw/StockDetail.asp?STOCK_ID=%s", stockcode);
         try {
-            Document doc = Jsoup.connect(stockurl).get();
+            Document doc = Jsoup.connect(stockurl)
+                    .userAgent(UA)
+                    .referrer("http://www.google.com")
+                    .get();
             Element infotable = doc.getElementsByClass("b1 p4_4 r10").get(0);
             String industryType = infotable.select("tbody > tr:nth-child(3) > td:nth-child(2)").text();
             String companyType = infotable.select(" tbody > tr:nth-child(4) > td:nth-child(2) > nobr").text();
@@ -118,10 +122,13 @@ public class CrawlerService {
     public StockDetail crawlYahooSourceStock(String stockcode) {
         try {
             StockBasicInfo stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
-            stockBasicInfo = stockBasicInfo == null ? crawlStockBasicInfo(stockcode) : null;
+            stockBasicInfo = stockBasicInfo == null ? crawlStockBasicInfo(stockcode) : stockBasicInfo;
 
             String stockurl = String.format("https://tw.stock.yahoo.com/quote/%s.TW", stockcode);
-            Document doc = Jsoup.connect(stockurl).get();
+            Document doc = Jsoup.connect(stockurl)
+                    .userAgent(UA)
+                    .referrer("http://www.google.com")
+                    .get();
             Element table = doc.select("#qsp-overview-realtime-info > div:nth-child(2) > div > div > ul").get(0);
             String price = table.select("li:nth-child(1) > span:nth-child(2)").text();
             String lastprice = table.select("li:nth-child(7) > span:nth-child(2)").text();
@@ -158,7 +165,10 @@ public class CrawlerService {
             stockBasicInfo = stockBasicInfo == null ? crawlStockBasicInfo(stockcode) : null;
 
             String stockurl = String.format("https://invest.cnyes.com/twstock/TWS/%s", stockcode);
-            Document doc = Jsoup.connect(stockurl).get();
+            Document doc = Jsoup.connect(stockurl)
+                    .userAgent(UA)
+                    .referrer("http://www.google.com")
+                    .get();
             String price = doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[2]/div[2]/div/div[6]/div[2]", stockcode)).text();
             String lastprice = doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[2]/div[2]/div/div[4]/div[2]", stockcode)).text();
             String open = doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[2]/div[2]/div/div[5]/div[2]", stockcode)).text();
@@ -197,7 +207,10 @@ public class CrawlerService {
     public StockBasicInfo crawlYahooStockBasicInfo(String stockcode) {
         try {
             String infostockurl = String.format("https://tw.stock.yahoo.com/quote/%s/profile", stockcode);
-            Document infodoc = Jsoup.connect(infostockurl).get();
+            Document infodoc = Jsoup.connect(infostockurl)
+                    .userAgent(UA)
+                    .referrer("http://www.google.com")
+                    .get();
             String companyType = infodoc.selectXpath("//*[@id='main-2-QuoteProfile-Proxy']/div/section[1]/div[2]/div[20]/div/div").text();
             String industryType = infodoc.selectXpath("//*[@id='main-2-QuoteProfile-Proxy']/div/section[1]/div[2]/div[9]/div/div").text();
             String name = infodoc.selectXpath("//*[@id='main-2-QuoteProfile-Proxy']/div/section[1]/div[2]/div[1]/div/div").text();
@@ -224,7 +237,10 @@ public class CrawlerService {
     public StockBasicInfo crawlGoodInfoStockBasicInfo(String stockcode) {
         String stockurl = String.format("https://goodinfo.tw/tw/StockDetail.asp?STOCK_ID=%s", stockcode);
         try {
-            Document doc = Jsoup.connect(stockurl).get();
+            Document doc = Jsoup.connect(stockurl)
+                    .userAgent(UA)
+                    .referrer("http://www.google.com")
+                    .get();
             Element infotable = doc.getElementsByClass("b1 p4_4 r10").get(0);
             String industryType = infotable.select("tbody > tr:nth-child(3) > td:nth-child(2)").text();
             String companyType = infotable.select(" tbody > tr:nth-child(4) > td:nth-child(2) > nobr").text();

@@ -1,6 +1,7 @@
 package cooba.IndustryPerformance.service;
 
 import cooba.IndustryPerformance.constant.RedisConstant;
+import cooba.IndustryPerformance.constant.StockConstant;
 import cooba.IndustryPerformance.database.entity.Industry.Industry;
 import cooba.IndustryPerformance.database.entity.Industry.Stock;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
@@ -17,7 +18,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
-import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -49,7 +49,7 @@ public class IndustryService {
     private static final Integer FAILRATESTANDARD = 70;
     private String today = LocalDate.now().toString();
 
-    @PostConstruct
+    //@PostConstruct
     public void init() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start("biuldAllIndustryInfo");
@@ -254,7 +254,7 @@ public class IndustryService {
         }
     }
 
-    public BigDecimal getGrowth(String industryType, int days, Map<String, String> StockMap) {
+    public BigDecimal getGrowth(int days, Map<String, String> StockMap) {
         List<String> stocklist = new ArrayList<>();
         if (StockMap.isEmpty()) {
             log.warn("StockMap 為空");
@@ -304,7 +304,7 @@ public class IndustryService {
     }
 
     public BigDecimal getIndustryGrowth(String industryType) {
-        return getIndustry_n_DaysGrowth(1, industryType, "");
+        return getIndustry_n_DaysGrowth(1, industryType, StockConstant.LISTEDOTC);
     }
 
     public BigDecimal getIndustryGrowth(String industryType, String companyType) {
@@ -329,7 +329,7 @@ public class IndustryService {
                         .map(StockBasicInfo::getStockcode)
                         .collect(Collectors.toList());
                 newstockMap = stockMap.entrySet().stream().filter(entry -> stocklist.contains(entry.getKey())).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-                growth = getGrowth(industryType, days, newstockMap);
+                growth = getGrowth(days, newstockMap);
                 redisUtility.valueSet(key, String.valueOf(growth));
                 log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, industryType, days, growth, stocklist);
                 break;
@@ -339,12 +339,12 @@ public class IndustryService {
                         .map(StockBasicInfo::getStockcode)
                         .collect(Collectors.toList());
                 newstockMap = stockMap.entrySet().stream().filter(entry -> stocklist.contains(entry.getKey())).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-                growth = getGrowth(industryType, days, newstockMap);
+                growth = getGrowth(days, newstockMap);
                 redisUtility.valueSet(key, String.valueOf(growth));
                 log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, industryType, days, growth, stocklist);
                 break;
             default:
-                growth = getGrowth(industryType, days, stockMap);
+                growth = getGrowth(days, stockMap);
                 redisUtility.valueSet(key, String.valueOf(growth));
                 log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, industryType, days, growth, stockMap);
                 break;
@@ -353,7 +353,7 @@ public class IndustryService {
     }
 
     public BigDecimal getSubIndustryGrowth(String industryType, String subIndustryName) {
-        return getSubIndustry_n_DaysGrowth(1, industryType, subIndustryName, "");
+        return getSubIndustry_n_DaysGrowth(1, industryType, subIndustryName, StockConstant.LISTEDOTC);
     }
 
     public BigDecimal getSubIndustryGrowth(String industryType, String subIndustryName, String companyType) {
@@ -378,7 +378,7 @@ public class IndustryService {
                         .map(StockBasicInfo::getStockcode)
                         .collect(Collectors.toList());
                 newstockMap = stockMap.entrySet().stream().filter(entry -> stocklist.contains(entry.getKey())).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-                growth = getGrowth(subIndustryName, days, newstockMap);
+                growth = getGrowth(days, newstockMap);
                 redisUtility.valueSet(key, String.valueOf(growth));
                 log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, subIndustryName, days, growth, stocklist);
                 break;
@@ -388,12 +388,12 @@ public class IndustryService {
                         .map(StockBasicInfo::getStockcode)
                         .collect(Collectors.toList());
                 newstockMap = stockMap.entrySet().stream().filter(entry -> stocklist.contains(entry.getKey())).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-                growth = getGrowth(subIndustryName, days, newstockMap);
+                growth = getGrowth(days, newstockMap);
                 redisUtility.valueSet(key, String.valueOf(growth));
                 log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, subIndustryName, days, growth, stocklist);
                 break;
             default:
-                growth = getGrowth(subIndustryName, days, stockMap);
+                growth = getGrowth(days, stockMap);
                 redisUtility.valueSet(key, String.valueOf(growth));
                 log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, subIndustryName, days, growth, stockMap);
                 break;
