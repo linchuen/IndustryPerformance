@@ -85,7 +85,7 @@ public class DownloadStockCsvService {
             if (redisUtility.hasKey(key)) {
                 StockBasicInfo stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
                 industryType = String.valueOf(stockBasicInfo.getIndustryType());
-                companyType = String.valueOf(stockBasicInfo.getIndustryType());
+                companyType = String.valueOf(stockBasicInfo.getCompanyType());
             }
             List<String[]> list = openCSVReader.readAll();
             list = list.subList(2, list.size() - 5);
@@ -104,7 +104,7 @@ public class DownloadStockCsvService {
                         .map(s -> Integer.parseInt(s))
                         .collect(Collectors.toList());
                 //dateList格視為111/03/01轉換來的
-                LocalDate createdTime = LocalDate.of(dateList.get(0) + 2011, dateList.get(1), dateList.get(2));
+                LocalDate createdTime = LocalDate.of(dateList.get(0) + 1911, dateList.get(1), dateList.get(2));
 
                 StockDetail stockDetail = StockDetail.builder()
                         .stockcode(stockcode)
