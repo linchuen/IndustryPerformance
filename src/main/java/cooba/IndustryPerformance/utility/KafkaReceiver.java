@@ -23,9 +23,8 @@ public class KafkaReceiver {
         try {
             StockCsvInfo csvInfo = objectMapper.readValue(record.value(), StockCsvInfo.class);
             if (stockCsvService.downloadStockCsv(csvInfo.getStockcode(), csvInfo.getDate())) {
-                stockCsvService.readCsvToDB(csvInfo.getStockcode(), csvInfo.getDate());
+                stockCsvService.readCsvToDBAsync(csvInfo.getStockcode(), csvInfo.getDate());
             }
-            Thread.sleep(500);
         } catch (Exception e) {
             log.error("Kafkalistener error record:{} {}", record.value(), e.getMessage());
         }

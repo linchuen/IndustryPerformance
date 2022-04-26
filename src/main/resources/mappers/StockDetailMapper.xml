@@ -26,7 +26,7 @@
         VALUES(#{id}, #{stockcode}, #{name}, #{industryType}, #{companyType}, #{price}, #{lastprice}, #{open},
         #{highest}, #{lowest}, #{tradingVolume}, #{createdTime}, #{sharesTraded}, #{turnover})
         ON DUPLICATE KEY UPDATE price=#{price}, lastprice=#{lastprice}, open=#{open}, highest=#{highest},
-        lowest=#{lowest}, tradingVolume=#{tradingVolume}
+        lowest=#{lowest}, tradingVolume=#{tradingVolume}, industryType=#{industryType}, companyType=#{companyType}
     </insert>
 
     <select id="findStockDetail" resultType="long">

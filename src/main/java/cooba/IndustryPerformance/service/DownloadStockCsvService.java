@@ -14,6 +14,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -69,11 +70,16 @@ public class DownloadStockCsvService {
         return true;
     }
 
+    @Async("stockExecutor")
+    public void readCsvToDBAsync(String stockcode, LocalDate date) {
+        readCsvToDB(stockcode, date);
+    }
+
     public void readCsvToDB(String stockcode, LocalDate date) {
         String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMM"));
         String filePath = String.format("%s\\STOCK_DAY_%s_%s.csv", csvPath, stockcode, dateStr);
         File file = new File(filePath);
-        if (file.length() == 0) return;
+        if (file.length() / 1024 == 0) return;
 
         try {
             CSVReader openCSVReader = new CSVReader(new InputStreamReader(new FileInputStream(filePath), "Big5"));

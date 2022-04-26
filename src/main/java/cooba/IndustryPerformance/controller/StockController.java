@@ -16,7 +16,14 @@ public class StockController {
     @GetMapping("stock/{stockCode}")
     public StockDetail getStockDetail(@PathVariable String stockCode) {
         return stockService.getStockDetailToday(stockCode)
-                .orElseGet(() -> stockService.buildStockDetail(stockCode));
+                .orElseGet(() -> {
+                    StockDetail stockDetail = stockService.buildStockDetail(stockCode);
+                    if (stockDetail == null) {
+                        return new StockDetail();
+                    } else {
+                        return stockDetail;
+                    }
+                });
     }
 
     @DeleteMapping("stock")
