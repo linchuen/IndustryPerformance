@@ -14,8 +14,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -127,8 +129,11 @@ public class StockService {
         }
     }
 
-    public void deleteAllStockDetail() {
-        stockDetailRepository.deleteAll();
+    public List<String> getStockListByCompanyType(String companyType) {
+        return stockBasicInfoRepository.findByCompanyType(companyType)
+                .stream()
+                .map(stockBasicInfo -> stockBasicInfo.getStockcode())
+                .collect(Collectors.toList());
     }
 
     public String getCompanyType(String stockcode) {
@@ -146,6 +151,10 @@ public class StockService {
                 return stockBasicInfo.getCompanyType();
             }
         }
+    }
+
+    public void deleteAllStockDetail() {
+        stockDetailRepository.deleteAll();
     }
 
     public boolean isListed(String stockcode) {

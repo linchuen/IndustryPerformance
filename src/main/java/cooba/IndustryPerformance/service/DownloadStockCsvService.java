@@ -44,15 +44,15 @@ public class DownloadStockCsvService {
         String filePath = String.format("%s\\STOCK_DAY_%s_%s.csv", csvPath, stockcode, date.format(DateTimeFormatter.ofPattern("yyyyMM")));
         File file = new File(filePath);
         if (!file.exists()) {
+            WebDriverManager.chromedriver().setup();
+            HashMap<String, Object> chromePrefs = new HashMap<String, Object>();
+            chromePrefs.put("download.default_directory", csvPath);
+            ChromeOptions chromeOptions = new ChromeOptions();
+            chromeOptions.addArguments("--headless");
+            chromeOptions.addArguments("--disable-gpu");
+            chromeOptions.setExperimentalOption("prefs", chromePrefs);
+            WebDriver driver = new ChromeDriver(chromeOptions);
             try {
-                WebDriverManager.chromedriver().setup();
-                HashMap<String, Object> chromePrefs = new HashMap<String, Object>();
-                chromePrefs.put("download.default_directory", csvPath);
-                ChromeOptions chromeOptions = new ChromeOptions();
-                chromeOptions.addArguments("--headless");
-                chromeOptions.addArguments("--disable-gpu");
-                chromeOptions.setExperimentalOption("prefs", chromePrefs);
-                WebDriver driver = new ChromeDriver(chromeOptions);
                 String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
                 driver.get(String.format("https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=csv&date=%s&stockNo=%s", dateStr, stockcode));
                 Thread.sleep(1000);
@@ -63,6 +63,7 @@ public class DownloadStockCsvService {
                 }
                 return false;
             } catch (Exception e) {
+                driver.quit();
                 log.warn("downloadCsv失敗 class:{} error:{}", getClass().getName(), e.getMessage());
                 return false;
             }
