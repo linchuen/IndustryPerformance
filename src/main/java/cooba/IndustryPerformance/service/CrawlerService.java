@@ -73,7 +73,7 @@ public class CrawlerService {
 
         if (stockDetail == null) {
             log.warn("{}爬取失敗", stockcode);
-            redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode, 3, TimeUnit.DAYS);
+            redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode, 1, TimeUnit.HOURS);
         }
         return stockDetail;
     }

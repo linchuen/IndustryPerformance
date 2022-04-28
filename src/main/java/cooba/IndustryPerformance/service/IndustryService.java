@@ -267,13 +267,8 @@ public class IndustryService {
             String stockcode = entry.getKey();
             String stockname = entry.getValue();
 
-            StockDetail stock = stockService.getStockDetailToday(stockcode).orElseGet(() -> {
-                if (!redisUtility.hasKey(RedisConstant.BLACKLIST + stockcode)) {
-                    return stockService.buildStockDetail(stockcode);
-                } else {
-                    return null;
-                }
-            });
+            StockDetail stock = stockService.getStockDetailToday(stockcode)
+                    .orElseGet(() -> stockService.buildStockDetail(stockcode));
             if (days > 1) {
                 StockDetail stock_n = stockService.getStockDetailLast_n_day(stockcode, days).orElse(null);
                 if (stock == null || stock_n == null) {
