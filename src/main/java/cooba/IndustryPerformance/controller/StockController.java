@@ -24,7 +24,14 @@ public class StockController {
                 .orElseGet(() -> {
                     StockDetail stockDetail = stockService.buildStockDetail(stockCode);
                     if (stockDetail == null) {
-                        return new StockDetail();
+                        StockBasicInfo stockBasicInfo = stockService.getStockBasicInfo(stockCode);
+                        stockDetail = StockDetail.builder()
+                                .stockcode(stockBasicInfo.getStockcode())
+                                .name(stockBasicInfo.getName())
+                                .companyType(stockBasicInfo.getCompanyType())
+                                .industryType(stockBasicInfo.getIndustryType())
+                                .build();
+                        return stockDetail;
                     } else {
                         return stockDetail;
                     }

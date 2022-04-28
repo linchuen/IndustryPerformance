@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -49,7 +50,7 @@ public class StockService {
                         StockBasicInfo stockBasicInfo = crawlerService.crawlStockBasicInfo(stockcode);
                         if (stockBasicInfo == null) {
                             return null;
-                        } else if (stockBasicInfo.getCompanyType().equals("興櫃")) {
+                        } else if (!Stream.of("上市", "上櫃").collect(Collectors.toList()).contains(stockBasicInfo.getCompanyType())) {
                             redisUtility.valueSet(RedisConstant.BLACKLIST + stockcode, stockcode);
                         }
                         try {
@@ -98,6 +99,7 @@ public class StockService {
         }
     }
 
+    //GET
     public Optional<StockDetail> getStockDetailToday(String stockcode) {
         return getStockDetailLast_n_day(stockcode, 0);
     }
@@ -136,21 +138,25 @@ public class StockService {
                 .collect(Collectors.toSet());
     }
 
-    public String getCompanyType(String stockcode) {
+    public StockBasicInfo getStockBasicInfo(String stockcode) {
         String key = RedisConstant.STOCKBASICINFO + stockcode;
 
         if (redisUtility.hasKey(key)) {
-            return (String) redisUtility.Map(key).entries().get("CompanyType");
+            return (StockBasicInfo) redisUtility.valueObjectGet(key, StockBasicInfo.class);
         } else {
             synchronized (LocalcacheService.getStockcodeLock(stockcode)) {
                 if (redisUtility.hasKey(key)) {
-                    return (String) redisUtility.Map(key).entries().get("CompanyType");
+                    return (StockBasicInfo) redisUtility.valueObjectGet(key, StockBasicInfo.class);
                 }
 
                 StockBasicInfo stockBasicInfo = stockBasicInfoRepository.findByStockcode(stockcode).orElse(new StockBasicInfo());
-                return stockBasicInfo.getCompanyType();
+                return stockBasicInfo;
             }
         }
+    }
+
+    public String getCompanyType(String stockcode) {
+        return getStockBasicInfo(stockcode).getCompanyType();
     }
 
     public void deleteAllStockDetail() {
