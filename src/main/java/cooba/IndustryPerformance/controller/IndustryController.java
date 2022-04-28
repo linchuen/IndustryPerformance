@@ -84,18 +84,18 @@ public class IndustryController {
         return industryService.getIndustry_n_DaysGrowth(days, industryType, LISTEDOTC).floatValue();
     }
 
-    @GetMapping("industry/growth/listed/")
+    @GetMapping("industry/growth/listed")
     public Float getListedIndustry_n_DaysGrowth(@RequestParam("Days") int days, @RequestParam("Type") String industryType) {
         return industryService.getIndustry_n_DaysGrowth(days, industryType, LISTED).floatValue();
     }
 
     @GetMapping("subindustry/growth")
-    public Float getSubindustry_n_DaysGrowth(@RequestParam("Days") int days, @RequestParam("Type") String industryType, @RequestParam("Subtype") String subIndustryName) {
+    public Float getSubindustry_n_DaysGrowth(@RequestParam("Days") int days, @RequestParam("Type") String industryType, @RequestParam("SubType") String subIndustryName) {
         return industryService.getSubIndustry_n_DaysGrowth(days, industryType, subIndustryName, LISTEDOTC).floatValue();
     }
 
-    @GetMapping("subindustry/growth/listed/")
-    public Float getListedSubindustry_n_DaysGrowth(@RequestParam("Days") int days, @RequestParam("Type") String industryType, @RequestParam("Subtype") String subIndustryName) {
+    @GetMapping("subindustry/growth/listed")
+    public Float getListedSubindustry_n_DaysGrowth(@RequestParam("Days") int days, @RequestParam("Type") String industryType, @RequestParam("SubType") String subIndustryName) {
         return industryService.getSubIndustry_n_DaysGrowth(days, industryType, subIndustryName, LISTED).floatValue();
     }
 
