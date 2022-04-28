@@ -1,16 +1,22 @@
 package cooba.IndustryPerformance.controller;
 
+import cooba.IndustryPerformance.database.entity.StockBasicInfo.StockBasicInfo;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
 import cooba.IndustryPerformance.service.StockService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.Set;
 
 @RestController
 public class StockController {
     @Autowired
     private StockService stockService;
+
+    @GetMapping("stock/basicinfo/{stockCode}")
+    public StockBasicInfo buildStockBasicInfo(@PathVariable String stockCode) {
+        return stockService.buildStockBasicInfo(stockCode);
+    }
 
     @GetMapping("stock/{stockCode}")
     public StockDetail getStockDetail(@PathVariable String stockCode) {
@@ -26,7 +32,7 @@ public class StockController {
     }
 
     @GetMapping("stock")
-    public List<String> getStockListByCompanyType(@RequestParam("companyType") String companyType) {
+    public Set<String> getStockListByCompanyType(@RequestParam("companyType") String companyType) {
         return stockService.getStockListByCompanyType(companyType);
     }
 

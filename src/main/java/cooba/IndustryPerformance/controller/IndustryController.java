@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static cooba.IndustryPerformance.constant.StockConstant.LISTED;
 import static cooba.IndustryPerformance.constant.StockConstant.LISTEDOTC;
 
 @RestController
@@ -73,7 +74,7 @@ public class IndustryController {
     }
 
     @GetMapping("industry/growth/{industryType}/{subIndustryName}")
-    public Float getIndustryGrowth(@PathVariable String industryType, @PathVariable String subIndustryName) {
+    public Float getSubindustryGrowth(@PathVariable String industryType, @PathVariable String subIndustryName) {
         subIndustryName = subIndustryName.replace("->", "/");
         return industryService.getSubIndustryGrowth(industryType, subIndustryName).floatValue();
     }
@@ -81,6 +82,21 @@ public class IndustryController {
     @GetMapping("industry/growth")
     public Float getIndustry_n_DaysGrowth(@RequestParam("Days") int days, @RequestParam("Type") String industryType) {
         return industryService.getIndustry_n_DaysGrowth(days, industryType, LISTEDOTC).floatValue();
+    }
+
+    @GetMapping("industry/growth/listed/")
+    public Float getListedIndustry_n_DaysGrowth(@RequestParam("Days") int days, @RequestParam("Type") String industryType) {
+        return industryService.getIndustry_n_DaysGrowth(days, industryType, LISTED).floatValue();
+    }
+
+    @GetMapping("subindustry/growth")
+    public Float getSubindustry_n_DaysGrowth(@RequestParam("Days") int days, @RequestParam("Type") String industryType, @RequestParam("Subtype") String subIndustryName) {
+        return industryService.getSubIndustry_n_DaysGrowth(days, industryType, subIndustryName, LISTEDOTC).floatValue();
+    }
+
+    @GetMapping("subindustry/growth/listed/")
+    public Float getListedSubindustry_n_DaysGrowth(@RequestParam("Days") int days, @RequestParam("Type") String industryType, @RequestParam("Subtype") String subIndustryName) {
+        return industryService.getSubIndustry_n_DaysGrowth(days, industryType, subIndustryName, LISTED).floatValue();
     }
 
     @DeleteMapping("industry")

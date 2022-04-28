@@ -55,7 +55,7 @@ public class DownloadStockCsvService {
             try {
                 String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
                 driver.get(String.format("https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=csv&date=%s&stockNo=%s", dateStr, stockcode));
-                Thread.sleep(1000);
+                Thread.sleep(2000);
                 driver.quit();
                 if (file.exists()) {
                     log.info("downloadCsv成功 {}", file.getName());

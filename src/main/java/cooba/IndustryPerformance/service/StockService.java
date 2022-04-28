@@ -14,8 +14,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -129,11 +129,11 @@ public class StockService {
         }
     }
 
-    public List<String> getStockListByCompanyType(String companyType) {
+    public Set<String> getStockListByCompanyType(String companyType) {
         return stockBasicInfoRepository.findByCompanyType(companyType)
                 .stream()
                 .map(stockBasicInfo -> stockBasicInfo.getStockcode())
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
     }
 
     public String getCompanyType(String stockcode) {

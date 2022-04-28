@@ -171,7 +171,7 @@ public class CrawlerService {
                 log.warn("{}股票不存在", stockcode);
                 return null;
             }
-            
+
             String stockurl = String.format("https://invest.cnyes.com/twstock/TWS/%s", stockcode);
             Document doc = Jsoup.connect(stockurl)
                     .userAgent(UA)

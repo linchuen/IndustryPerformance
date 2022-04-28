@@ -363,6 +363,7 @@ public class IndustryService {
 
     public BigDecimal getSubIndustry_n_DaysGrowth(int days, String industryType, String subIndustryName, String companyType) {
         String key = RedisConstant.GROWTH + industryType + ":" + subIndustryName + ":" + companyType + ":" + today;
+        key = days > 1 ? key + ":" + days : key;
         if (redisUtility.hasKey(key)) {
             log.info("取得Growth: {} redis資訊", industryType);
             BigDecimal growth = new BigDecimal(redisUtility.valueGet(key));
