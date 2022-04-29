@@ -128,7 +128,7 @@ public class CrawlerService {
                 return null;
             }
 
-            String stockurl = String.format("https://tw.stock.yahoo.com/quote/%s.TW", stockcode);
+            String stockurl = String.format("https://tw.stock.yahoo.com/quote/%s", stockcode);
             Document doc = Jsoup.connect(stockurl)
                     .userAgent(UA)
                     .referrer("http://www.google.com")

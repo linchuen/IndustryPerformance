@@ -2,6 +2,7 @@ package cooba.IndustryPerformance.controller;
 
 import cooba.IndustryPerformance.constant.KafkaConstant;
 import cooba.IndustryPerformance.entity.StockCsvInfo;
+import cooba.IndustryPerformance.service.DownloadStockCsvService;
 import cooba.IndustryPerformance.service.IndustryService;
 import cooba.IndustryPerformance.utility.KafkaSender;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,12 +12,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @RestController
 public class DownloadStockCsvController {
     @Autowired
     IndustryService industryService;
+    @Autowired
+    DownloadStockCsvService downloadStockCsvService;
     @Autowired
     KafkaSender kafkaSender;
 
@@ -58,6 +63,16 @@ public class DownloadStockCsvController {
             return String.format("%s AllIndustryHistory已經送至kafka", date);
         } catch (Exception e) {
             return "發生錯誤";
+        }
+    }
+
+    @GetMapping("organizefile")
+    public List<String> organizeFile(@RequestParam("date") String dateStr) {
+        LocalDate date = LocalDate.parse(dateStr);
+        try {
+            return downloadStockCsvService.organizeFile(date);
+        } catch (Exception e) {
+            return new ArrayList<>();
         }
     }
 }

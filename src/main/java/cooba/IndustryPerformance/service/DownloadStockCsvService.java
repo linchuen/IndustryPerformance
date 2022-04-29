@@ -21,8 +21,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -155,5 +158,29 @@ public class DownloadStockCsvService {
         } catch (Exception e) {
             log.warn("{} readCsvToDB失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
         }
+    }
+
+    public List<String> organizeFile(LocalDate date) {
+        String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMM"));
+        String folderStr = csvPath + "\\" + dateStr;
+        new File(folderStr).mkdir();
+
+        List<String> changeList = new ArrayList<>();
+        File csvFolder = new File(csvPath);
+        for (String file : csvFolder.list()) {
+            if (file.contains(dateStr)) {
+                try {
+                    File from = new File(csvPath + "\\" + file);
+                    File to = new File(folderStr + "\\" + file);
+                    if (from.isFile()) {
+                        Files.move(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        changeList.add(file);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return changeList;
     }
 }
