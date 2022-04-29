@@ -166,7 +166,7 @@ public class CrawlerService {
     public StockDetail crawlAnueSourceStock(String stockcode) {
         try {
             StockBasicInfo stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
-            stockBasicInfo = stockBasicInfo == null ? crawlStockBasicInfo(stockcode) : null;
+            stockBasicInfo = stockBasicInfo == null ? crawlStockBasicInfo(stockcode) : stockBasicInfo;
             if (stockBasicInfo == null) {
                 log.warn("{}股票不存在", stockcode);
                 return null;
