@@ -28,7 +28,7 @@ public class stockTest {
 
     @Test
     public void getStockDetailLast_n_day() throws JsonProcessingException {
-        StockDetail stockDetail = stockService.getStockDetailLast_n_day("2330", 2).get();
+        StockDetail stockDetail = stockService.getStockDetailLast_n_day("2330", 1).get();
         System.out.println(objectMapper.writeValueAsString(stockDetail));
     }
 

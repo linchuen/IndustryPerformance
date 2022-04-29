@@ -11,8 +11,9 @@ public class SkipDateController {
     SkipDateService skipDateService;
 
     @GetMapping("skipdate")
-    public void updateSkipdate() {
+    public boolean updateSkipdate() {
         skipDateService.downloadSkipDateCsv();
-        skipDateService.createSkipDate();
+        return skipDateService.createSkipDate();
+
     }
 }

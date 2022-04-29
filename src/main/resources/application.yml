@@ -10,7 +10,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        hbm2ddl.auto: create-drop
+        hbm2ddl.auto: update
 
   data:
     mongodb:

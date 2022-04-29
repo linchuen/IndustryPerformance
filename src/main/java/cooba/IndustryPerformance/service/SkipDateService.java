@@ -49,7 +49,7 @@ public class SkipDateService {
         }
     }
 
-    public void createSkipDate() {
+    public boolean createSkipDate() {
         int year = LocalDate.now().getYear() - 1911;
         String filePath = String.format("%s\\holidaySchedule_%d.csv", csvPath, year);
         try {
@@ -61,8 +61,10 @@ public class SkipDateService {
                 LocalDate date = LocalDate.of(LocalDate.now().getYear(), dateArr[0], dateArr[1]);
                 skipDateRepository.save(new SkipDate(date));
             });
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
+            return false;
         }
     }
 
