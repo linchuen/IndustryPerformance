@@ -71,8 +71,13 @@ public class StockService {
     }
 
     public StockDetail buildStockDetail(String stockcode) {
+        LocalDate date = LocalDate.now();
+        while (skipDateService.isSkipDate(date)) {
+            date = date.minusDays(1);
+        }
+
         synchronized (LocalcacheService.getStockcodeLock(stockcode)) {
-            return stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, LocalDate.now())
+            return stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, date)
                     .orElseGet(() -> {
                         StockDetail stockDetail = crawlerService.crawlStock(stockcode);
                         if (stockDetail == null) {
@@ -131,7 +136,7 @@ public class StockService {
         }
     }
 
-    public Set<String> getStockListByCompanyType(String companyType) {
+    public Set<String> getStockSetByCompanyType(String companyType) {
         return stockBasicInfoRepository.findByCompanyType(companyType)
                 .stream()
                 .map(stockBasicInfo -> stockBasicInfo.getStockcode())

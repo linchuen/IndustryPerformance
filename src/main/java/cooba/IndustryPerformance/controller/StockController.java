@@ -40,7 +40,7 @@ public class StockController {
 
     @GetMapping("stock")
     public Set<String> getStockListByCompanyType(@RequestParam("companyType") String companyType) {
-        return stockService.getStockListByCompanyType(companyType);
+        return stockService.getStockSetByCompanyType(companyType);
     }
 
     @DeleteMapping("stock")

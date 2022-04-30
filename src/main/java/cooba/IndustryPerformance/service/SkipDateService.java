@@ -73,6 +73,9 @@ public class SkipDateService {
         if (weekend.contains(date.getDayOfWeek())) {
             return true;
         }
+        if (!LocalcacheService.getSkipDateList().isEmpty()) {
+            return LocalcacheService.getSkipDateList().contains(date);
+        }
         return skipDateRepository.findBySkipDate(date).isPresent();
     }
 }

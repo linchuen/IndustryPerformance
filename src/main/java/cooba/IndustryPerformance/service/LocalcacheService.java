@@ -2,13 +2,16 @@ package cooba.IndustryPerformance.service;
 
 import cooba.IndustryPerformance.database.entity.Industry.Industry;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
+import cooba.IndustryPerformance.database.entity.SkipDate.SkipDate;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
+import cooba.IndustryPerformance.database.repository.SkipDateRepository;
 import cooba.IndustryPerformance.enums.UrlEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,17 +22,21 @@ public class LocalcacheService {
     @Autowired
     IndustryRepository industryRepository;
     @Autowired
+    SkipDateRepository skipDateRepository;
+    @Autowired
     CrawlerService crawlerService;
 
     public static List<String> industryLock = new ArrayList<>();
     public static List<String> subindustryLock = new ArrayList<>();
     public static Set<String> stockcodeLock = new HashSet<>();
+    public static List<LocalDate> skipDateList = new ArrayList<>();
 
     @PostConstruct
     public void init() {
         log.info("init");
         industryLock = Arrays.stream(UrlEnum.values()).map(o -> o.name()).collect(Collectors.toList());
         updateStockcodeLockMap();
+        skipDateList = skipDateRepository.findAll().stream().map(SkipDate::getSkipDate).collect(Collectors.toList());
     }
 
     public static String getIndustryLock(String industryType) {
@@ -51,6 +58,10 @@ public class LocalcacheService {
             if (s.equals(stockcode)) return s;
         }
         return "";
+    }
+
+    public static List<LocalDate> getSkipDateList() {
+        return skipDateList;
     }
 
     public void updateStockcodeLockMap() {
