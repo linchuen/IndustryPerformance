@@ -98,7 +98,7 @@ public class DownloadStockCsvService {
                 companyType = String.valueOf(stockBasicInfo.getCompanyType());
             }
             List<String[]> list = openCSVReader.readAll();
-            list = list.subList(2, list.size() - 5);
+            list = list.subList(1, list.size() - 5);
             String finalIndustryType = industryType;
             String finalCompanyType = companyType;
             list.forEach(records -> {

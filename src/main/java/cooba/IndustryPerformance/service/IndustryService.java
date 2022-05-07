@@ -18,7 +18,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
-import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -49,7 +48,7 @@ public class IndustryService {
 
     private String today = LocalDate.now().toString();
 
-    @PostConstruct
+    //@PostConstruct
     public void init() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start("biuldAllIndustryInfo");
