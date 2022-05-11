@@ -102,11 +102,11 @@ public class DownloadStockCsvService {
             String finalIndustryType = industryType;
             String finalCompanyType = companyType;
             list.forEach(records -> {
-                BigDecimal price = new BigDecimal(Float.valueOf(records[6].replace(",", "")));
-                BigDecimal lastprice = new BigDecimal(Float.valueOf(records[6].replace(",", "")));
-                BigDecimal open = new BigDecimal(Float.valueOf(records[3].replace(",", "")));
-                BigDecimal highest = new BigDecimal(records[4].replace(",", ""));
-                BigDecimal lowest = new BigDecimal(Float.valueOf(records[5].replace(",", "")));
+                BigDecimal price = new BigDecimal(records[6].replace(",", "").replace("--", "0"));
+                BigDecimal lastprice = new BigDecimal(records[6].replace(",", "").replace("--", "0"));
+                BigDecimal open = new BigDecimal(records[3].replace(",", "").replace("--", "0"));
+                BigDecimal highest = new BigDecimal(records[4].replace(",", "").replace("--", "0"));
+                BigDecimal lowest = new BigDecimal(records[5].replace(",", "").replace("--", "0"));
                 Long sharesTraded = Long.parseLong(records[1].replace(",", ""));
                 Long turnover = Long.parseLong(records[2].replace(",", ""));
                 int tradingVolume = Integer.parseInt(records[8].replace(",", ""));
