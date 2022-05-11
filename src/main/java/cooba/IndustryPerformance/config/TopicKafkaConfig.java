@@ -15,4 +15,12 @@ public class TopicKafkaConfig {
                 .replicas(1)
                 .build();
     }
+
+    @Bean
+    public NewTopic statisticsTopic() {
+        return TopicBuilder.name(KafkaConstant.STATISTICSTOPIC)
+                .partitions(10)
+                .replicas(1)
+                .build();
+    }
 }

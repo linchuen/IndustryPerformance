@@ -15,10 +15,22 @@ public class AsyncConfig {
     @Bean(name = "stockExecutor")
     public Executor StockExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(10);
+        executor.setMaxPoolSize(20);
+        executor.setQueueCapacity(2000);
+        executor.setThreadNamePrefix("asyncStock-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
+
+    @Bean(name = "stockInfoExecutor")
+    public Executor StockInfoExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(5);
         executor.setMaxPoolSize(10);
         executor.setQueueCapacity(1000);
-        executor.setThreadNamePrefix("asyncStock-");
+        executor.setThreadNamePrefix("asyncStockInfo-");
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
         return executor;

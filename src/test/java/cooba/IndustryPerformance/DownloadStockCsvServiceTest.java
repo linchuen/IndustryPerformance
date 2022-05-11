@@ -15,7 +15,7 @@ public class DownloadStockCsvServiceTest {
 
     @Test
     public void Test() {
-        downloadStockCsvService.downloadStockCsv("2330", LocalDate.of(2022, 2, 1));
-        //downloadStockCsvService.readCsvToDB("2330", LocalDate.of(2022, 3, 1));
+//        downloadStockCsvService.downloadStockCsv("2330", LocalDate.of(2022, 4, 1));
+        downloadStockCsvService.readCsvToDB("2330", LocalDate.of(2022, 4, 1));
     }
 }

@@ -1,7 +1,7 @@
 package cooba.IndustryPerformance;
 
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
-import cooba.IndustryPerformance.database.entity.StockStatistics.StockStatistics;
+import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import cooba.IndustryPerformance.database.repository.StockStatisticsRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +21,8 @@ public class mongoTest {
     @Autowired
     MongoTemplate mongoTemplate;
     @Autowired
+    StockDetailRepository stockDetailRepository;
+    @Autowired
     StockStatisticsRepository stockStatisticsRepository;
 
     //@Test
@@ -38,9 +40,12 @@ public class mongoTest {
 
     @Test
     public void Test() {
+
         Query query = new Query();
         query.addCriteria(Criteria.where("stockcode").is("2330"));
-        StockStatistics stockStatistics = mongoTemplate.find(query, StockStatistics.class, "stockStatistics").get(0);
-        System.out.println(stockStatistics);
+        query.addCriteria(Criteria.where("createdTime").lt(LocalDate.now()));
+        List<StockDetail> stockDetailList = mongoTemplate.find(query, StockDetail.class, "stockDetail");
+        List<LocalDate> dateList = stockDetailList.stream().map(stockDetail -> stockDetail.getCreatedTime()).sorted().collect(Collectors.toList());
+        dateList.forEach(System.out::println);
     }
 }

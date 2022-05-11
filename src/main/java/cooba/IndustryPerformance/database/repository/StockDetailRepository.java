@@ -12,5 +12,11 @@ import java.util.Optional;
 public interface StockDetailRepository extends MongoRepository<StockDetail, String> {
     Optional<StockDetail> findByStockcodeAndCreatedTime(String stockcode, LocalDate localDate);
 
-    List<StockDetail> findByStockcodeAndCreatedTimeBetween(String stockcode, LocalDate startDate, LocalDate endDate);
+    List<StockDetail> findByStockcodeAndCreatedTimeBetweenOrderByCreatedTimeDesc(String stockcode, LocalDate startDate, LocalDate endDate);
+
+    List<StockDetail> findByStockcodeAndCreatedTimeBeforeOrderByCreatedTimeDesc(String stockcode, LocalDate startDate);
+
+    List<StockDetail> findTop100ByStockcodeAndCreatedTimeBeforeOrderByCreatedTimeDesc(String stockcode, LocalDate startDate);
+
+    List<StockDetail> deleteByCreatedTime(LocalDate date);
 }

@@ -5,6 +5,7 @@ import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.entity.SkipDate.SkipDate;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
 import cooba.IndustryPerformance.database.repository.SkipDateRepository;
+import cooba.IndustryPerformance.database.repository.StockBasicInfoRepository;
 import cooba.IndustryPerformance.enums.UrlEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +17,15 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static cooba.IndustryPerformance.constant.StockConstant.LISTED;
+
 @Slf4j
 @Service
 public class LocalcacheService {
     @Autowired
     IndustryRepository industryRepository;
+    @Autowired
+    StockBasicInfoRepository stockBasicInfoRepository;
     @Autowired
     SkipDateRepository skipDateRepository;
     @Autowired
@@ -30,6 +35,7 @@ public class LocalcacheService {
     public static List<String> subindustryLock = new ArrayList<>();
     public static Set<String> stockcodeLock = new HashSet<>();
     public static List<LocalDate> skipDateList = new ArrayList<>();
+    public static Set<String> listedStockList = new HashSet<>();
 
     @PostConstruct
     public void init() {
@@ -37,6 +43,10 @@ public class LocalcacheService {
         industryLock = Arrays.stream(UrlEnum.values()).map(o -> o.name()).collect(Collectors.toList());
         updateStockcodeLockMap();
         skipDateList = skipDateRepository.findAll().stream().map(SkipDate::getSkipDate).collect(Collectors.toList());
+        listedStockList = stockBasicInfoRepository.findByCompanyType(LISTED)
+                .stream()
+                .map(stockBasicInfo -> stockBasicInfo.getStockcode())
+                .collect(Collectors.toSet());
     }
 
     public static String getIndustryLock(String industryType) {
@@ -62,6 +72,10 @@ public class LocalcacheService {
 
     public static List<LocalDate> getSkipDateList() {
         return skipDateList;
+    }
+
+    public static Set<String> getListedStockList() {
+        return listedStockList;
     }
 
     public void updateStockcodeLockMap() {

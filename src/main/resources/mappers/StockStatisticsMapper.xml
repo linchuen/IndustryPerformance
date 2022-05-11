@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace 對應持久層的介面 -->
+<mapper namespace="cooba.IndustryPerformance.database.mapper.StockStatisticsMapper">
+    <resultMap type="cooba.IndustryPerformance.database.entity.StockStatistics.StockStatistics" id="stockstatistics">
+        <result column="id" property="id"/>
+        <result column="stockcode" property="stockcode"/>
+        <result column="avgCost" property="avgCost"/>
+        <result column="avg5dCost" property="avg5dCost"/>
+        <result column="avg10dCost" property="avg10dCost"/>
+        <result column="avg21dCost" property="avg21dCost"/>
+        <result column="avg62dCost" property="avg62dCost"/>
+        <result column="avgShare" property="avgShare"/>
+        <result column="tradingDate" property="tradingDate"/>
+    </resultMap>
+
+    <insert id="insertStockStatistics"
+            parameterType="cooba.IndustryPerformance.database.entity.StockStatistics.StockStatistics">
+        INSERT INTO
+        StockStatistics(id, stockcode, avgCost, avg5dCost, avg10dCost, avg21dCost, avg62dCost, avgShare, tradingDate)
+        VALUES(#{id}, #{stockcode}, #{avgCost}, #{avg5dCost}, #{avg10dCost}, #{avg21dCost}, #{avg62dCost}, #{avgShare},
+        #{tradingDate})
+        ON DUPLICATE KEY UPDATE avgCost=#{avgCost}, avg5dCost=#{avg5dCost}, avg10dCost=#{avg10dCost},
+        avg21dCost=#{avg21dCost},
+        avg62dCost=#{avg62dCost}, avgShare=#{avgShare}
+    </insert>
+</mapper>

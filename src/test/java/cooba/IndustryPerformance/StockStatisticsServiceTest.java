@@ -23,7 +23,7 @@ public class StockStatisticsServiceTest {
 
     @Test
     public void get() {
-        List<StockDetail> stockDetailList = stockDetailRepository.findByStockcodeAndCreatedTimeBetween("2330", LocalDate.of(2022, 1, 1), LocalDate.of(2022, 3, 31));
+        List<StockDetail> stockDetailList = stockDetailRepository.findByStockcodeAndCreatedTimeBetweenOrderByCreatedTimeDesc("2330", LocalDate.of(2022, 1, 1), LocalDate.of(2022, 3, 31));
         List<BigDecimal> avgCostList = new ArrayList<>();
         stockDetailList.forEach(stockDetail -> {
             BigDecimal avgCost = BigDecimal.valueOf((float) stockDetail.getTurnover() / stockDetail.getSharesTraded()).setScale(2, RoundingMode.HALF_UP);
@@ -89,5 +89,10 @@ public class StockStatisticsServiceTest {
     @Test
     public void calculateStockStatistics() {
         stockStatisticsService.calculateStockStatistics("2330", LocalDate.of(2022, 2, 28), LocalDate.of(2022, 4, 1));
+    }
+
+    @Test
+    public void updateStockStatistics() {
+        stockStatisticsService.updateStockStatistics("1470", LocalDate.of(2022, 4, 28), 62);
     }
 }

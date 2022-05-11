@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +39,7 @@ public class StockService {
 
     private String today = LocalDate.now().toString();
 
-    @Async("stockExecutor")
+    @Async("stockInfoExecutor")
     public StockBasicInfo asyncBuildStockBasicInfo(String stockcode) {
         return buildStockBasicInfo(stockcode);
     }
@@ -158,6 +159,10 @@ public class StockService {
                 return stockBasicInfo;
             }
         }
+    }
+
+    public List<StockDetail> getStockDetailBetween(String stockcode, LocalDate startDate, LocalDate endDate) {
+        return stockDetailRepository.findByStockcodeAndCreatedTimeBetweenOrderByCreatedTimeDesc(stockcode, startDate, endDate);
     }
 
     public String getCompanyType(String stockcode) {
