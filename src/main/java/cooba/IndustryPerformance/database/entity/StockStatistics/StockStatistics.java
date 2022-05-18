@@ -26,4 +26,5 @@ public class StockStatistics {
     private BigDecimal avg62dCost;
     private BigDecimal avgShare;
     private LocalDate tradingDate;
+    private String joinKey;
 }

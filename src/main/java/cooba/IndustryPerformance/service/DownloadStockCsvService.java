@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -79,6 +80,7 @@ public class DownloadStockCsvService {
         readCsvToDB(stockcode, date);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void readCsvToDB(String stockcode, LocalDate date) {
         String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMM"));
         String filePath = String.format("%s\\STOCK_DAY_%s_%s.csv", csvPath, stockcode, dateStr);
@@ -135,12 +137,10 @@ public class DownloadStockCsvService {
                         oldStockDetail -> {
                             stockDetail.setId(oldStockDetail.getId());
                             stockDetailRepository.save(stockDetail);
-                            log.info("股票代碼:{} 交易日期:{} 更新mongodb成功", stockcode, stockDetail.getCreatedTime());
                         },
                         () -> {
                             try {
                                 stockDetailRepository.save(stockDetail);
-                                log.info("股票代碼:{} 交易日期:{} 寫入mongodb成功", stockcode, stockDetail.getCreatedTime());
                             } catch (Exception e) {
                                 log.warn("股票代碼:{} 寫入mongodb失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
                             }
@@ -150,13 +150,13 @@ public class DownloadStockCsvService {
                 try {
                     stockDetail.setId(createdTime.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode);
                     stockDetailMapper.insertStockDetail(stockDetail);
-                    log.info("股票代碼:{} 交易日期:{} 寫入mysql成功", stockcode, stockDetail.getCreatedTime());
                 } catch (Exception e) {
                     log.warn("股票代碼:{} 寫入mysql失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
                 }
             });
+            log.info("股票代碼:{} readCsvToDB成功", stockcode);
         } catch (Exception e) {
-            log.warn("{} readCsvToDB失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
+            log.warn("股票代碼:{} readCsvToDB失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
         }
     }
 

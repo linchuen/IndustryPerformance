@@ -13,6 +13,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -89,6 +90,7 @@ public class StockStatisticsService {
         return avgNdCostList;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void saveListData(String stockcode, List<LocalDate> dateList, List<BigDecimal> avgShareList, List<BigDecimal> avgCostList
             , List<BigDecimal> avg5dCostList, List<BigDecimal> avg10dCostList, List<BigDecimal> avg21dCostList, List<BigDecimal> avg62dCostList) {
         synchronized (LocalcacheService.getStockcodeLock(stockcode)) {
@@ -123,11 +125,12 @@ public class StockStatisticsService {
         }
     }
 
-    public void updateStockStatistics(String stockcode, LocalDate date, int n) {
+    @Transactional(rollbackFor = Exception.class)
+    public boolean updateStockStatistics(String stockcode, LocalDate date, int n) {
         List<StockDetail> stockDetailList = stockDetailRepository.findTop100ByStockcodeAndCreatedTimeBeforeOrderByCreatedTimeDesc(stockcode, date.plusDays(1));
         BigDecimal result = new BigDecimal(0);
-        if (n > stockDetailList.size()) return;
-        
+        if (n > stockDetailList.size()) return false;
+
         stockDetailList.subList(0, n).forEach(stockDetail -> {
             BigDecimal avgCost = BigDecimal.valueOf((float) stockDetail.getTurnover() / stockDetail.getSharesTraded()).setScale(2, RoundingMode.HALF_UP);
             result.add(avgCost.divide(new BigDecimal(n), 2, RoundingMode.HALF_UP));
@@ -148,5 +151,6 @@ public class StockStatisticsService {
                 update.set(avg62d, result);
         }
         mongoTemplate.findAndModify(query, update, StockStatistics.class, "stockStatistics");
+        return true;
     }
 }

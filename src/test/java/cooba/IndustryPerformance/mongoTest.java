@@ -12,8 +12,12 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+
+import static cooba.IndustryPerformance.service.LocalcacheService.getListedStockList;
 
 
 @SpringBootTest
@@ -40,12 +44,30 @@ public class mongoTest {
 
     @Test
     public void Test() {
-
         Query query = new Query();
         query.addCriteria(Criteria.where("stockcode").is("2330"));
         query.addCriteria(Criteria.where("createdTime").lt(LocalDate.now()));
         List<StockDetail> stockDetailList = mongoTemplate.find(query, StockDetail.class, "stockDetail");
         List<LocalDate> dateList = stockDetailList.stream().map(stockDetail -> stockDetail.getCreatedTime()).sorted().collect(Collectors.toList());
         dateList.forEach(System.out::println);
+    }
+
+    @Test
+    public void Test2() {
+        Map<String, Long> map = new HashMap<>();
+        getListedStockList().stream().forEach(s -> {
+            Query query = new Query();
+            query.addCriteria(Criteria.where("stockcode").is(s));
+            long n = mongoTemplate.count(query, "stockDetail");
+            map.put(s, n);
+        });
+        map.entrySet().forEach(System.out::println);
+    }
+
+    @Test
+    public void Test3() {
+        List<StockDetail> stockDetailList = stockDetailRepository.findStockDetailStatisticsByStockcodeAndDate("2330");
+        stockDetailList.forEach(stockDetail ->
+                System.out.println(stockDetail.getStockStatistics().get(0)));
     }
 }
