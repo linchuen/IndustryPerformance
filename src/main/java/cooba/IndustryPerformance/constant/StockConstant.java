@@ -10,4 +10,9 @@ public class StockConstant {
     public static final String avg10d = "avg10dCost";
     public static final String avg21d = "avg21dCost";
     public static final String avg62d = "avg62dCost";
+
+    public static final int d5 = 5;
+    public static final int d10 = 10;
+    public static final int d21 = 21;
+    public static final int d62 = 62;
 }

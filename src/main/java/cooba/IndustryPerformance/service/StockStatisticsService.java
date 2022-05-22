@@ -5,6 +5,7 @@ import cooba.IndustryPerformance.database.entity.StockStatistics.StockStatistics
 import cooba.IndustryPerformance.database.mapper.StockStatisticsMapper;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import cooba.IndustryPerformance.database.repository.StockStatisticsRepository;
+import cooba.IndustryPerformance.entity.StockDetailStatistics;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -20,7 +21,9 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static cooba.IndustryPerformance.constant.StockConstant.*;
 
@@ -37,30 +40,54 @@ public class StockStatisticsService {
     MongoTemplate mongoTemplate;
 
     @Async("stockExecutor")
+    @Transactional(rollbackFor = Exception.class)
     public void calculateStockStatisticsAsync(String stockcode, LocalDate startDate, LocalDate endDate) {
         calculateStockStatistics(stockcode, startDate, endDate);
     }
 
     public void calculateStockStatistics(String stockcode, LocalDate startDate, LocalDate endDate) {
-        List<StockDetail> stockDetailList = stockDetailRepository.findByStockcodeAndCreatedTimeBetweenOrderByCreatedTimeDesc(stockcode, startDate, endDate);
-        calculateStockDetailList(stockcode, stockDetailList);
+        LocalDate start = startDate.minusMonths(3);
+        LocalDate end = endDate.plusDays(1);
+        List<StockDetail> stockDetailList = stockDetailRepository.findByStockcodeAndCreatedTimeBetweenOrderByCreatedTimeDesc(stockcode, start, end);
+        List<StockDetail> filterOut0StockDetailList = stockDetailList.stream()
+                .filter(stockDetail -> stockDetail.getPrice().compareTo(BigDecimal.ZERO) != 0)
+                .collect(Collectors.toList());
+        List<LocalDate> dateList = filterOut0StockDetailList.stream()
+                .map(StockDetail::getCreatedTime)
+                .filter(localdate -> !localdate.isBefore(startDate) && !localdate.isAfter(endDate))
+                .collect(Collectors.toList());
+        calculateStockDetailList(stockcode, stockDetailList, dateList);
     }
 
-    public void calculateStockStatistics(String stockcode, LocalDate startDate) {
+    @Async("stockExecutor")
+    @Transactional(rollbackFor = Exception.class)
+    public void calculateStockStatisticsStartDateBeforeAsync(String stockcode, LocalDate startDate) {
+        calculateStockStatisticsStartDateBefore(stockcode, startDate);
+    }
+
+    public void calculateStockStatisticsStartDateBefore(String stockcode, LocalDate startDate) {
         List<StockDetail> stockDetailList = stockDetailRepository.findByStockcodeAndCreatedTimeBeforeOrderByCreatedTimeDesc(stockcode, startDate);
-        calculateStockDetailList(stockcode, stockDetailList);
+        List<StockDetail> filterOut0StockDetailList = stockDetailList.stream()
+                .filter(stockDetail -> stockDetail.getPrice().compareTo(BigDecimal.ZERO) != 0)
+                .collect(Collectors.toList());
+        List<LocalDate> dateList = filterOut0StockDetailList.stream()
+                .map(StockDetail::getCreatedTime)
+                .collect(Collectors.toList());
+        calculateStockDetailList(stockcode, filterOut0StockDetailList, dateList);
     }
 
-    public void calculateStockDetailList(String stockcode, List<StockDetail> stockDetailList) {
+    public void calculateStockDetailList(String stockcode, List<StockDetail> stockDetailList, List<LocalDate> dateList) {
         List<BigDecimal> avgCostList = new ArrayList<>();
         List<BigDecimal> avgShareList = new ArrayList<>();
-        List<LocalDate> dateList = new ArrayList<>();
+        List<BigDecimal> volumeList = new ArrayList<>();
+        if (dateList.isEmpty()) return;
+
         stockDetailList.forEach(stockDetail -> {
             BigDecimal avgCost = BigDecimal.valueOf((float) stockDetail.getTurnover() / stockDetail.getSharesTraded()).setScale(2, RoundingMode.HALF_UP);
             avgCostList.add(avgCost);
             BigDecimal avgShare = BigDecimal.valueOf((float) stockDetail.getSharesTraded() / stockDetail.getTradingVolume()).setScale(2, RoundingMode.HALF_UP);
             avgShareList.add(avgShare);
-            dateList.add(stockDetail.getCreatedTime());
+            volumeList.add(BigDecimal.valueOf(stockDetail.getTradingVolume()));
         });
 
         List<BigDecimal> avg5dCostList = countNdAvgCost(avgCostList, 5);
@@ -68,7 +95,9 @@ public class StockStatisticsService {
         List<BigDecimal> avg21dCostList = countNdAvgCost(avgCostList, 21);
         List<BigDecimal> avg62dCostList = countNdAvgCost(avgCostList, 62);
 
-        saveListData(stockcode, dateList, avgShareList, avgCostList,
+        List<BigDecimal> avg21dVolumeList = countNdAvgCost(volumeList, 21);
+
+        saveListData(stockcode, dateList, avgShareList, avg21dVolumeList, avgCostList,
                 avg5dCostList, avg10dCostList, avg21dCostList, avg62dCostList);
     }
 
@@ -91,8 +120,15 @@ public class StockStatisticsService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void saveListData(String stockcode, List<LocalDate> dateList, List<BigDecimal> avgShareList, List<BigDecimal> avgCostList
-            , List<BigDecimal> avg5dCostList, List<BigDecimal> avg10dCostList, List<BigDecimal> avg21dCostList, List<BigDecimal> avg62dCostList) {
+    public void saveListData(String stockcode,
+                             List<LocalDate> dateList,
+                             List<BigDecimal> avgShareList,
+                             List<BigDecimal> avg21dVolumeList,
+                             List<BigDecimal> avgCostList,
+                             List<BigDecimal> avg5dCostList,
+                             List<BigDecimal> avg10dCostList,
+                             List<BigDecimal> avg21dCostList,
+                             List<BigDecimal> avg62dCostList) {
         synchronized (LocalcacheService.getStockcodeLock(stockcode)) {
             try {
                 for (int i = 0; i < dateList.size(); i++) {
@@ -104,7 +140,10 @@ public class StockStatisticsService {
                     if (i < avg5dCostList.size()) stockStatistics.setAvg5dCost(avg5dCostList.get(i));
                     if (i < avg10dCostList.size()) stockStatistics.setAvg10dCost(avg10dCostList.get(i));
                     if (i < avg21dCostList.size()) stockStatistics.setAvg21dCost(avg21dCostList.get(i));
+                    if (i < avg21dVolumeList.size()) stockStatistics.setAvg21dVolume(avg21dVolumeList.get(i));
                     if (i < avg62dCostList.size()) stockStatistics.setAvg62dCost(avg62dCostList.get(i));
+                    String joinKey = stockStatistics.getTradingDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode;
+                    stockStatistics.setJoinKey(joinKey);
                     stockStatisticsRepository.findByStockcodeAndTradingDate(stockcode, dateList.get(i)).ifPresentOrElse(
                             oldStockStatistics -> {
                                 stockStatistics.setId(oldStockStatistics.getId());
@@ -115,7 +154,7 @@ public class StockStatisticsService {
                             }
                     );
 
-                    stockStatistics.setId(stockStatistics.getTradingDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode);
+                    stockStatistics.setId(joinKey);
                     stockStatisticsMapper.insertStockStatistics(stockStatistics);
                 }
                 log.info("統計數據 股票代碼:{} 寫入db完成", stockcode);
@@ -141,16 +180,29 @@ public class StockStatisticsService {
 
         Update update = new Update();
         switch (n) {
-            case 5:
+            case d5:
                 update.set(avg5d, result);
-            case 10:
+            case d10:
                 update.set(avg10d, result);
-            case 21:
+            case d21:
                 update.set(avg21d, result);
-            case 62:
+            case d62:
                 update.set(avg62d, result);
         }
         mongoTemplate.findAndModify(query, update, StockStatistics.class, "stockStatistics");
         return true;
+    }
+
+    public StockDetailStatistics getStockcodeStatistics(String stockcode, LocalDate date) {
+        return StockDetailStatistics.convert(stockStatisticsRepository.findStockDetailStatisticsByStockcodeAndDate(stockcode, date).orElseGet(() -> new StockStatistics()));
+    }
+
+    public List<StockDetailStatistics> getStockcodeStatisticsList(String stockcode, int limit) {
+        List<StockDetailStatistics> stockDetailStatisticsList = stockStatisticsRepository.findStockDetailStatisticsByStockcode(stockcode, limit)
+                .stream()
+                .map(stockStatistics -> StockDetailStatistics.convert(stockStatistics))
+                .collect(Collectors.toList());
+        Collections.reverse(stockDetailStatisticsList);
+        return stockDetailStatisticsList;
     }
 }

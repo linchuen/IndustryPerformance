@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface StockStatisticsRepository extends MongoRepository<StockStatistics, String> {
+public interface StockStatisticsRepository extends MongoRepository<StockStatistics, String>, StockStatisticsRepositoryCustom {
     List<StockStatistics> findByStockcode(String stockcode);
 
     Optional<StockStatistics> findByStockcodeAndTradingDate(String stockcode, LocalDate localDate);

@@ -30,8 +30,8 @@ public class SkipDateService {
     @Autowired
     SkipDateRepository skipDateRepository;
 
-    public void downloadSkipDateCsv() {
-        int year = LocalDate.now().getYear() - 1911;
+    public void downloadSkipDateCsv(int year) {
+        year = year - 1911;
         try {
             WebDriverManager.chromedriver().setup();
             HashMap<String, Object> chromePrefs = new HashMap<String, Object>();
@@ -49,16 +49,16 @@ public class SkipDateService {
         }
     }
 
-    public boolean createSkipDate() {
-        int year = LocalDate.now().getYear() - 1911;
-        String filePath = String.format("%s\\holidaySchedule_%d.csv", csvPath, year);
+    public boolean createSkipDate(int year) {
+        int chineseYear = year - 1911;
+        String filePath = String.format("%s\\holidaySchedule_%d.csv", csvPath, chineseYear);
         try {
             CSVReader openCSVReader = new CSVReader(new InputStreamReader(new FileInputStream(filePath), "Big5"));
             List<String[]> list = openCSVReader.readAll();
             list = list.subList(2, list.size() - 1);
             list.forEach(strings -> {
                 int[] dateArr = Arrays.stream(strings[1].replace("日", "").split("月")).mapToInt(Integer::parseInt).toArray();
-                LocalDate date = LocalDate.of(LocalDate.now().getYear(), dateArr[0], dateArr[1]);
+                LocalDate date = LocalDate.of(year, dateArr[0], dateArr[1]);
                 skipDateRepository.save(new SkipDate(date));
             });
             return true;

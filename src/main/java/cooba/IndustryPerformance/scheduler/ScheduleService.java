@@ -48,7 +48,7 @@ public class ScheduleService {
 
     @Scheduled(cron = "0 0 0 1 1 *")
     private void biuldSkipDate() {
-        skipDateService.downloadSkipDateCsv();
-        skipDateService.createSkipDate();
+        skipDateService.downloadSkipDateCsv(LocalDate.now().getYear());
+        skipDateService.createSkipDate(LocalDate.now().getYear());
     }
 }

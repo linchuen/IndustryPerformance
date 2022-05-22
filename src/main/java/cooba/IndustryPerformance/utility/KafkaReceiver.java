@@ -42,7 +42,11 @@ public class KafkaReceiver {
     public void listenStatistics(ConsumerRecord<String, String> record) {
         try {
             StatisticsInfo statisticsInfo = objectMapper.readValue(record.value(), StatisticsInfo.class);
-            stockStatisticsService.calculateStockStatisticsAsync(statisticsInfo.getStockcode(), statisticsInfo.getStartDate(), statisticsInfo.getEndDate());
+            if (statisticsInfo.getEndDate() != null) {
+                stockStatisticsService.calculateStockStatisticsAsync(statisticsInfo.getStockcode(), statisticsInfo.getStartDate(), statisticsInfo.getEndDate());
+            } else {
+                stockStatisticsService.calculateStockStatisticsStartDateBeforeAsync(statisticsInfo.getStockcode(), statisticsInfo.getStartDate());
+            }
         } catch (Exception e) {
             log.error("Kafkalistener error record:{} {}", record.value(), e.getMessage());
         }

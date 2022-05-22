@@ -1,6 +1,7 @@
 package cooba.IndustryPerformance;
 
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
+import cooba.IndustryPerformance.database.entity.StockStatistics.StockStatistics;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import cooba.IndustryPerformance.database.repository.StockStatisticsRepository;
 import org.junit.jupiter.api.Test;
@@ -66,8 +67,7 @@ public class mongoTest {
 
     @Test
     public void Test3() {
-        List<StockDetail> stockDetailList = stockDetailRepository.findStockDetailStatisticsByStockcodeAndDate("2330");
-        stockDetailList.forEach(stockDetail ->
-                System.out.println(stockDetail.getStockStatistics().get(0)));
+        StockStatistics stockStatistics = stockStatisticsRepository.findStockDetailStatisticsByStockcodeAndDate("2330", LocalDate.of(2022, 04, 29)).orElse(new StockStatistics());
+        System.out.println(stockStatistics);
     }
 }

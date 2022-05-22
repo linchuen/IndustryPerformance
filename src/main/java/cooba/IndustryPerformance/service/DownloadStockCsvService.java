@@ -132,6 +132,7 @@ public class DownloadStockCsvService {
                         .createdTime(createdTime)
                         .industryType(finalIndustryType)
                         .companyType(finalCompanyType)
+                        .joinKey(createdTime.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode)
                         .build();
                 stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, createdTime).ifPresentOrElse(
                         oldStockDetail -> {
