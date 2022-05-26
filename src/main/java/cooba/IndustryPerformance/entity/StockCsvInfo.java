@@ -11,5 +11,6 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class StockCsvInfo {
     String stockcode;
+    String uuid;
     LocalDate date;
 }

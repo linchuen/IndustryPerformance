@@ -27,6 +27,7 @@ public class StockDetailStatistics {
     private BigDecimal 平均62日成本;
     private BigDecimal 平均股數;
     private int 成交筆數;
+    private int 平均10日成交筆數;
     private int 平均21日成交筆數;
     private LocalDate tradingDate;
 
@@ -46,6 +47,7 @@ public class StockDetailStatistics {
                 .平均62日成本(stockStatistics.getAvg62dCost())
                 .平均股數(stockStatistics.getAvgShare())
                 .成交筆數(stockStatistics.getStockDetail().get(0).getTradingVolume())
+                .平均10日成交筆數(stockStatistics.getAvg10dVolume().intValue())
                 .平均21日成交筆數(stockStatistics.getAvg21dVolume().intValue())
                 .tradingDate(stockStatistics.getTradingDate())
                 .build();

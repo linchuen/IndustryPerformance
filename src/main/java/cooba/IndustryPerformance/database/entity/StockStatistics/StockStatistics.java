@@ -27,6 +27,7 @@ public class StockStatistics {
     private BigDecimal avg21dCost;
     private BigDecimal avg62dCost;
     private BigDecimal avgShare;
+    private BigDecimal avg10dVolume;
     private BigDecimal avg21dVolume;
     private LocalDate tradingDate;
 

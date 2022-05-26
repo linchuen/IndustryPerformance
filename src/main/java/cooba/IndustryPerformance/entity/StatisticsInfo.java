@@ -11,6 +11,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class StatisticsInfo {
     String stockcode;
+    String uuid;
     LocalDate startDate;
     LocalDate endDate;
 }

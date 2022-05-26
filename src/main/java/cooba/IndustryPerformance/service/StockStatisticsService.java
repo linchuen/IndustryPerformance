@@ -15,6 +15,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StopWatch;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static cooba.IndustryPerformance.constant.StockConstant.*;
 
@@ -38,11 +40,19 @@ public class StockStatisticsService {
     StockStatisticsMapper stockStatisticsMapper;
     @Autowired
     MongoTemplate mongoTemplate;
+    @Autowired
+    TimeCounterService timeCounterService;
 
     @Async("stockExecutor")
     @Transactional(rollbackFor = Exception.class)
-    public void calculateStockStatisticsAsync(String stockcode, LocalDate startDate, LocalDate endDate) {
+    public void calculateStockStatisticsAsync(String uuid, String stockcode, LocalDate startDate, LocalDate endDate) {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start("calculateStockStatisticsAsync" + stockcode + startDate + endDate);
         calculateStockStatistics(stockcode, startDate, endDate);
+        stopWatch.stop();
+        System.out.println(stopWatch.prettyPrint());
+        Double time = stopWatch.getTotalTimeSeconds();
+        timeCounterService.addTime(uuid, time);
     }
 
     public void calculateStockStatistics(String stockcode, LocalDate startDate, LocalDate endDate) {
@@ -61,8 +71,14 @@ public class StockStatisticsService {
 
     @Async("stockExecutor")
     @Transactional(rollbackFor = Exception.class)
-    public void calculateStockStatisticsStartDateBeforeAsync(String stockcode, LocalDate startDate) {
+    public void calculateStockStatisticsStartDateBeforeAsync(String uuid, String stockcode, LocalDate startDate) {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start("calculateStockStatisticsStartDateBeforeAsync" + stockcode + startDate);
         calculateStockStatisticsStartDateBefore(stockcode, startDate);
+        stopWatch.stop();
+        System.out.println(stopWatch.prettyPrint());
+        Double time = stopWatch.getTotalTimeSeconds();
+        timeCounterService.addTime(uuid, time);
     }
 
     public void calculateStockStatisticsStartDateBefore(String stockcode, LocalDate startDate) {
@@ -73,6 +89,15 @@ public class StockStatisticsService {
         List<LocalDate> dateList = filterOut0StockDetailList.stream()
                 .map(StockDetail::getCreatedTime)
                 .collect(Collectors.toList());
+        calculateStockDetailList(stockcode, filterOut0StockDetailList, dateList);
+    }
+
+    public void createTodayStockStatistics(String stockcode) {
+        List<StockDetail> stockDetailList = stockDetailRepository.findTop100ByStockcodeAndCreatedTimeBeforeOrderByCreatedTimeDesc(stockcode, LocalDate.now().plusDays(1));
+        List<StockDetail> filterOut0StockDetailList = stockDetailList.stream()
+                .filter(stockDetail -> stockDetail.getPrice().compareTo(BigDecimal.ZERO) != 0)
+                .collect(Collectors.toList());
+        List<LocalDate> dateList = Stream.of(LocalDate.now()).collect(Collectors.toList());
         calculateStockDetailList(stockcode, filterOut0StockDetailList, dateList);
     }
 
@@ -90,30 +115,39 @@ public class StockStatisticsService {
             volumeList.add(BigDecimal.valueOf(stockDetail.getTradingVolume()));
         });
 
-        List<BigDecimal> avg5dCostList = countNdAvgCost(avgCostList, 5);
-        List<BigDecimal> avg10dCostList = countNdAvgCost(avgCostList, 10);
-        List<BigDecimal> avg21dCostList = countNdAvgCost(avgCostList, 21);
-        List<BigDecimal> avg62dCostList = countNdAvgCost(avgCostList, 62);
+        List<BigDecimal> avg5dCostList = countNdAvgList(avgCostList, 5);
+        List<BigDecimal> avg10dCostList = countNdAvgList(avgCostList, 10);
+        List<BigDecimal> avg21dCostList = countNdAvgList(avgCostList, 21);
+        List<BigDecimal> avg62dCostList = countNdAvgList(avgCostList, 62);
 
-        List<BigDecimal> avg21dVolumeList = countNdAvgCost(volumeList, 21);
+        List<BigDecimal> avg10dVolumeList = countNdAvgList(volumeList, 10);
+        List<BigDecimal> avg21dVolumeList = countNdAvgList(volumeList, 21);
 
-        saveListData(stockcode, dateList, avgShareList, avg21dVolumeList, avgCostList,
-                avg5dCostList, avg10dCostList, avg21dCostList, avg62dCostList);
+        saveListData(stockcode,
+                dateList,
+                avgShareList,
+                avg10dVolumeList,
+                avg21dVolumeList,
+                avgCostList,
+                avg5dCostList,
+                avg10dCostList,
+                avg21dCostList,
+                avg62dCostList);
     }
 
-    public List<BigDecimal> countNdAvgCost(List<BigDecimal> inputAvgCostList, int outputN) {
-        if (outputN > inputAvgCostList.size()
+    public List<BigDecimal> countNdAvgList(List<BigDecimal> inputAvgList, int outputN) {
+        if (outputN > inputAvgList.size()
                 || outputN <= 0
         ) return new ArrayList<>();
         List<BigDecimal> avgNdCostList = new ArrayList<>();
 
         BigDecimal sum = new BigDecimal(0);
         for (int i = 0; i < outputN; i++) {
-            sum = sum.add(inputAvgCostList.get(i));
+            sum = sum.add(inputAvgList.get(i));
         }
         avgNdCostList.add(sum.divide(new BigDecimal(outputN), 2, RoundingMode.HALF_UP));
-        for (int i = outputN; i < inputAvgCostList.size(); i++) {
-            sum = sum.add(inputAvgCostList.get(i)).subtract(inputAvgCostList.get(i - outputN));
+        for (int i = outputN; i < inputAvgList.size(); i++) {
+            sum = sum.add(inputAvgList.get(i)).subtract(inputAvgList.get(i - outputN));
             avgNdCostList.add(sum.divide(new BigDecimal(outputN), 2, RoundingMode.HALF_UP));
         }
         return avgNdCostList;
@@ -123,6 +157,7 @@ public class StockStatisticsService {
     public void saveListData(String stockcode,
                              List<LocalDate> dateList,
                              List<BigDecimal> avgShareList,
+                             List<BigDecimal> avg10dVolumeList,
                              List<BigDecimal> avg21dVolumeList,
                              List<BigDecimal> avgCostList,
                              List<BigDecimal> avg5dCostList,
@@ -140,8 +175,9 @@ public class StockStatisticsService {
                     if (i < avg5dCostList.size()) stockStatistics.setAvg5dCost(avg5dCostList.get(i));
                     if (i < avg10dCostList.size()) stockStatistics.setAvg10dCost(avg10dCostList.get(i));
                     if (i < avg21dCostList.size()) stockStatistics.setAvg21dCost(avg21dCostList.get(i));
-                    if (i < avg21dVolumeList.size()) stockStatistics.setAvg21dVolume(avg21dVolumeList.get(i));
                     if (i < avg62dCostList.size()) stockStatistics.setAvg62dCost(avg62dCostList.get(i));
+                    if (i < avg10dVolumeList.size()) stockStatistics.setAvg10dVolume(avg10dVolumeList.get(i));
+                    if (i < avg21dVolumeList.size()) stockStatistics.setAvg21dVolume(avg21dVolumeList.get(i));
                     String joinKey = stockStatistics.getTradingDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode;
                     stockStatistics.setJoinKey(joinKey);
                     stockStatisticsRepository.findByStockcodeAndTradingDate(stockcode, dateList.get(i)).ifPresentOrElse(

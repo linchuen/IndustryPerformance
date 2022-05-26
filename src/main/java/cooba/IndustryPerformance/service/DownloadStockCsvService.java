@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StopWatch;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,6 +44,8 @@ public class DownloadStockCsvService {
     StockDetailMapper stockDetailMapper;
     @Autowired
     RedisUtility redisUtility;
+    @Autowired
+    TimeCounterService timeCounterService;
 
     public boolean downloadStockCsv(String stockcode, LocalDate date) {
         String filePath = String.format("%s\\STOCK_DAY_%s_%s.csv", csvPath, stockcode, date.format(DateTimeFormatter.ofPattern("yyyyMM")));
@@ -76,8 +79,14 @@ public class DownloadStockCsvService {
     }
 
     @Async("stockExecutor")
-    public void readCsvToDBAsync(String stockcode, LocalDate date) {
+    public void readCsvToDBAsync(String uuid, String stockcode, LocalDate date) {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start("readCsvToDBAsync" + stockcode + date);
         readCsvToDB(stockcode, date);
+        stopWatch.stop();
+        System.out.println(stopWatch.prettyPrint());
+        Double time = stopWatch.getTotalTimeSeconds();
+        timeCounterService.addTime(uuid, time);
     }
 
     @Transactional(rollbackFor = Exception.class)

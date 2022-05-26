@@ -11,6 +11,7 @@
         <result column="avg21dCost" property="avg21dCost"/>
         <result column="avg62dCost" property="avg62dCost"/>
         <result column="avgShare" property="avgShare"/>
+        <result column="avg10dVolume" property="avg10dVolume"/>
         <result column="avg21dVolume" property="avg21dVolume"/>
         <result column="tradingDate" property="tradingDate"/>
     </resultMap>
@@ -18,11 +19,13 @@
     <insert id="insertStockStatistics"
             parameterType="cooba.IndustryPerformance.database.entity.StockStatistics.StockStatistics">
         INSERT INTO
-        StockStatistics(id, stockcode, avgCost, avg5dCost, avg10dCost, avg21dCost, avg62dCost, avgShare, avg21dVolume,
+        StockStatistics(id, stockcode, avgCost, avg5dCost, avg10dCost, avg21dCost, avg62dCost, avgShare, avg10dVolume,
+        avg21dVolume,
         tradingDate)
         VALUES(#{id}, #{stockcode}, #{avgCost}, #{avg5dCost}, #{avg10dCost}, #{avg21dCost}, #{avg62dCost},
-        #{avgShare}, #{avg21dVolume}, #{tradingDate})
+        #{avgShare}, #{avg10dVolume}, #{avg21dVolume}, #{tradingDate})
         ON DUPLICATE KEY UPDATE avgCost=#{avgCost}, avg5dCost=#{avg5dCost}, avg10dCost=#{avg10dCost},
-        avg21dCost=#{avg21dCost}, avg62dCost=#{avg62dCost}, avgShare=#{avgShare}, avg21dVolume=#{avg21dVolume}
+        avg21dCost=#{avg21dCost}, avg62dCost=#{avg62dCost}, avgShare=#{avgShare},avg10dVolume=#{avg10dVolume},
+        avg21dVolume=#{avg21dVolume}
     </insert>
 </mapper>
