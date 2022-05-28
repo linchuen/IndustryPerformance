@@ -14,7 +14,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StopWatch;
 
 import java.math.BigDecimal;
@@ -44,7 +43,6 @@ public class StockStatisticsService {
     TimeCounterService timeCounterService;
 
     @Async("stockExecutor")
-    @Transactional(rollbackFor = Exception.class)
     public void calculateStockStatisticsAsync(String uuid, String stockcode, LocalDate startDate, LocalDate endDate) {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start("calculateStockStatisticsAsync" + stockcode + startDate + endDate);
@@ -70,7 +68,6 @@ public class StockStatisticsService {
     }
 
     @Async("stockExecutor")
-    @Transactional(rollbackFor = Exception.class)
     public void calculateStockStatisticsStartDateBeforeAsync(String uuid, String stockcode, LocalDate startDate) {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start("calculateStockStatisticsStartDateBeforeAsync" + stockcode + startDate);
@@ -153,7 +150,6 @@ public class StockStatisticsService {
         return avgNdCostList;
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public void saveListData(String stockcode,
                              List<LocalDate> dateList,
                              List<BigDecimal> avgShareList,
@@ -199,8 +195,7 @@ public class StockStatisticsService {
             }
         }
     }
-
-    @Transactional(rollbackFor = Exception.class)
+    
     public boolean updateStockStatistics(String stockcode, LocalDate date, int n) {
         List<StockDetail> stockDetailList = stockDetailRepository.findTop100ByStockcodeAndCreatedTimeBeforeOrderByCreatedTimeDesc(stockcode, date.plusDays(1));
         BigDecimal result = new BigDecimal(0);

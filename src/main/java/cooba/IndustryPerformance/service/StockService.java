@@ -105,6 +105,10 @@ public class StockService {
         }
     }
 
+    public void createStockDetailMonthCache() {
+        
+    }
+
     //GET
     public Optional<StockDetail> getStockDetailToday(String stockcode) {
         return getStockDetailLast_n_day(stockcode, 0);

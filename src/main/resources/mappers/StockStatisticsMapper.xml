@@ -20,8 +20,7 @@
             parameterType="cooba.IndustryPerformance.database.entity.StockStatistics.StockStatistics">
         INSERT INTO
         StockStatistics(id, stockcode, avgCost, avg5dCost, avg10dCost, avg21dCost, avg62dCost, avgShare, avg10dVolume,
-        avg21dVolume,
-        tradingDate)
+        avg21dVolume, tradingDate)
         VALUES(#{id}, #{stockcode}, #{avgCost}, #{avg5dCost}, #{avg10dCost}, #{avg21dCost}, #{avg62dCost},
         #{avgShare}, #{avg10dVolume}, #{avg21dVolume}, #{tradingDate})
         ON DUPLICATE KEY UPDATE avgCost=#{avgCost}, avg5dCost=#{avg5dCost}, avg10dCost=#{avg10dCost},
