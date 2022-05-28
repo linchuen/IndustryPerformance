@@ -17,6 +17,7 @@ spring:
       host: ${MONGOHOST:localhost}
       port: ${MONGOPORT:27017}
       database: ${MONGODB:IndustryPerformance}
+      auto-index-creation: true
     redis:
       database: 0
       host: ${REDISHOST:localhost}
