@@ -1,6 +1,7 @@
 package cooba.IndustryPerformance.utility;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +61,16 @@ public class RedisUtility {
     }
 
     public Object valueObjectGet(String key, Class valueType) {
+        String s = String.valueOf(redisTemplate.opsForValue().get(key));
+        try {
+            return objectMapper.readValue(s, valueType);
+        } catch (JsonProcessingException e) {
+            log.error("redis 傳換 json 失敗 {}", s);
+            return null;
+        }
+    }
+
+    public Object valueObjectGet(String key, TypeReference valueType) {
         String s = String.valueOf(redisTemplate.opsForValue().get(key));
         try {
             return objectMapper.readValue(s, valueType);

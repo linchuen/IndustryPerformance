@@ -1,11 +1,13 @@
 package cooba.IndustryPerformance.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
 import cooba.IndustryPerformance.database.entity.StockStatistics.StockStatistics;
 import cooba.IndustryPerformance.database.mapper.StockStatisticsMapper;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import cooba.IndustryPerformance.database.repository.StockStatisticsRepository;
 import cooba.IndustryPerformance.entity.StockDetailStatistics;
+import cooba.IndustryPerformance.utility.RedisUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -23,9 +25,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static cooba.IndustryPerformance.constant.RedisConstant.STOCKSTATISTICSLIST;
 import static cooba.IndustryPerformance.constant.StockConstant.*;
 
 @Slf4j
@@ -41,6 +47,8 @@ public class StockStatisticsService {
     MongoTemplate mongoTemplate;
     @Autowired
     TimeCounterService timeCounterService;
+    @Autowired
+    RedisUtility redisUtility;
 
     @Async("stockExecutor")
     public void calculateStockStatisticsAsync(String uuid, String stockcode, LocalDate startDate, LocalDate endDate) {
@@ -120,7 +128,7 @@ public class StockStatisticsService {
         List<BigDecimal> avg10dVolumeList = countNdAvgList(volumeList, 10);
         List<BigDecimal> avg21dVolumeList = countNdAvgList(volumeList, 21);
 
-        saveListData(stockcode,
+        saveListBatchData(stockcode,
                 dateList,
                 avgShareList,
                 avg10dVolumeList,
@@ -195,7 +203,97 @@ public class StockStatisticsService {
             }
         }
     }
-    
+
+    public void saveListBatchData(String stockcode,
+                                  List<LocalDate> dateList,
+                                  List<BigDecimal> avgShareList,
+                                  List<BigDecimal> avg10dVolumeList,
+                                  List<BigDecimal> avg21dVolumeList,
+                                  List<BigDecimal> avgCostList,
+                                  List<BigDecimal> avg5dCostList,
+                                  List<BigDecimal> avg10dCostList,
+                                  List<BigDecimal> avg21dCostList,
+                                  List<BigDecimal> avg62dCostList) {
+        synchronized (LocalcacheService.getStockcodeLock(stockcode)) {
+            Map<Integer, List<StockStatistics>> monthStatisticsMap = new ConcurrentHashMap<>();
+            Map<Integer, List<StockStatistics>> calulateMonthStatisticsMap = new ConcurrentHashMap<>();
+            List<LocalDate> monthList = dateList.stream().map(date -> LocalDate.of(date.getYear(), date.getMonthValue(), 1)).distinct().collect(Collectors.toList());
+            monthList.forEach(localdate -> {
+                monthStatisticsMap.put(localdate.getMonthValue(), readStockStatisticsMonthCache(stockcode, localdate.getYear(), localdate.getMonthValue()));
+                calulateMonthStatisticsMap.put(localdate.getMonthValue(), new ArrayList<>());
+            });
+            try {
+                for (int i = 0; i < dateList.size(); i++) {
+                    StockStatistics stockStatistics = new StockStatistics();
+                    stockStatistics.setStockcode(stockcode);
+                    stockStatistics.setTradingDate(dateList.get(i));
+                    stockStatistics.setAvgShare(avgShareList.get(i));
+                    stockStatistics.setAvgCost(avgCostList.get(i));
+                    if (i < avg5dCostList.size()) stockStatistics.setAvg5dCost(avg5dCostList.get(i));
+                    if (i < avg10dCostList.size()) stockStatistics.setAvg10dCost(avg10dCostList.get(i));
+                    if (i < avg21dCostList.size()) stockStatistics.setAvg21dCost(avg21dCostList.get(i));
+                    if (i < avg62dCostList.size()) stockStatistics.setAvg62dCost(avg62dCostList.get(i));
+                    if (i < avg10dVolumeList.size()) stockStatistics.setAvg10dVolume(avg10dVolumeList.get(i));
+                    if (i < avg21dVolumeList.size()) stockStatistics.setAvg21dVolume(avg21dVolumeList.get(i));
+                    String joinKey = stockStatistics.getTradingDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode;
+                    stockStatistics.setJoinKey(joinKey);
+                    StockStatistics redisStockStatistics = monthStatisticsMap.get(stockStatistics.getTradingDate().getMonthValue())
+                            .stream()
+                            .filter(rss -> rss.getJoinKey().equals(joinKey))
+                            .findFirst()
+                            .get();
+                    stockStatistics.setId(redisStockStatistics.getId());
+                    calulateMonthStatisticsMap.get(stockStatistics.getTradingDate().getMonthValue()).add(stockStatistics);
+                }
+            } catch (Exception e) {
+                log.warn("統計數據 股票代碼:{} 寫入db失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
+            }
+            for (List<StockStatistics> resultList : calulateMonthStatisticsMap.values()) {
+                stockStatisticsRepository.saveAll(resultList);
+                resultList.forEach(stockStatistics -> stockStatistics.setId(stockStatistics.getJoinKey()));
+                stockStatisticsMapper.insertStockStatisticsList(resultList);
+            }
+            log.info("統計數據 股票代碼:{} 批次寫入db完成", stockcode);
+            monthList.forEach(localdate -> {
+                createStockStatisticsMonthCache(stockcode, localdate.getYear(), localdate.getMonthValue());
+            });
+            log.info("統計數據 股票代碼:{} 更新redis完成", stockcode);
+        }
+    }
+
+    public List<StockStatistics> createStockStatisticsMonthCache(String stockcode, int year, int month) {
+        LocalDate date = LocalDate.of(year, month, 1);
+        List<StockStatistics> stockStatisticsList = stockStatisticsRepository.findStockcodeByMonth(stockcode, year, month);
+        if (date.isBefore(LocalDate.now().minusMonths(6))) {
+            return stockStatisticsList;
+        }
+        redisUtility.valueObjectSet(STOCKSTATISTICSLIST + month + ":" + stockcode, stockStatisticsList, 30, TimeUnit.DAYS);
+        return stockStatisticsList;
+    }
+
+    //GET
+    public List<StockStatistics> readStockStatisticsMonthCache(String stockcode, int year, int month) {
+        List<StockStatistics> stockStatisticsList = (List<StockStatistics>) redisUtility.valueObjectGet(STOCKSTATISTICSLIST + month + ":" + stockcode, new TypeReference<List<StockStatistics>>() {
+        });
+        if (stockStatisticsList == null || stockStatisticsList.isEmpty()) {
+            stockStatisticsList = createStockStatisticsMonthCache(stockcode, year, month);
+        }
+        return stockStatisticsList;
+    }
+
+    public StockDetailStatistics getStockcodeStatistics(String stockcode, LocalDate date) {
+        return StockDetailStatistics.convert(stockStatisticsRepository.findStockDetailStatisticsByStockcodeAndDate(stockcode, date).orElseGet(() -> new StockStatistics()));
+    }
+
+    public List<StockDetailStatistics> getStockcodeStatisticsList(String stockcode, int limit) {
+        List<StockDetailStatistics> stockDetailStatisticsList = stockStatisticsRepository.findStockDetailStatisticsByStockcode(stockcode, limit)
+                .stream()
+                .map(stockStatistics -> StockDetailStatistics.convert(stockStatistics))
+                .collect(Collectors.toList());
+        Collections.reverse(stockDetailStatisticsList);
+        return stockDetailStatisticsList;
+    }
+
     public boolean updateStockStatistics(String stockcode, LocalDate date, int n) {
         List<StockDetail> stockDetailList = stockDetailRepository.findTop100ByStockcodeAndCreatedTimeBeforeOrderByCreatedTimeDesc(stockcode, date.plusDays(1));
         BigDecimal result = new BigDecimal(0);
@@ -222,18 +320,5 @@ public class StockStatisticsService {
         }
         mongoTemplate.findAndModify(query, update, StockStatistics.class, "stockStatistics");
         return true;
-    }
-
-    public StockDetailStatistics getStockcodeStatistics(String stockcode, LocalDate date) {
-        return StockDetailStatistics.convert(stockStatisticsRepository.findStockDetailStatisticsByStockcodeAndDate(stockcode, date).orElseGet(() -> new StockStatistics()));
-    }
-
-    public List<StockDetailStatistics> getStockcodeStatisticsList(String stockcode, int limit) {
-        List<StockDetailStatistics> stockDetailStatisticsList = stockStatisticsRepository.findStockDetailStatisticsByStockcode(stockcode, limit)
-                .stream()
-                .map(stockStatistics -> StockDetailStatistics.convert(stockStatistics))
-                .collect(Collectors.toList());
-        Collections.reverse(stockDetailStatisticsList);
-        return stockDetailStatisticsList;
     }
 }

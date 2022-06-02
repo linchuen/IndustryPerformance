@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @SpringBootTest
 public class stockTest {
@@ -39,5 +40,10 @@ public class stockTest {
         System.out.println(objectMapper.writeValueAsString(stockDetail));
     }
 
-
+    @Test
+    public void findStockcodeByMonth() {
+        stockService.createStockDetailMonthCache("2330", 2022, 4);
+        List<StockDetail> stockDetailList = stockDetailRepository.findStockcodeByMonth("2330", 2022, 4);
+        System.out.println(stockDetailList);
+    }
 }

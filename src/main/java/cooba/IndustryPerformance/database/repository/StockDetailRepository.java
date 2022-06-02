@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface StockDetailRepository extends MongoRepository<StockDetail, String> {
+public interface StockDetailRepository extends MongoRepository<StockDetail, String>, StockDetailRepositoryCustom {
     Optional<StockDetail> findByStockcodeAndCreatedTime(String stockcode, LocalDate localDate);
 
     List<StockDetail> findByStockcodeAndCreatedTimeBetweenOrderByCreatedTimeDesc(String stockcode, LocalDate startDate, LocalDate endDate);

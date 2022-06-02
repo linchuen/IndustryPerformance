@@ -1,6 +1,8 @@
 package cooba.IndustryPerformance;
 
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
+import cooba.IndustryPerformance.database.entity.StockStatistics.StockStatistics;
+import cooba.IndustryPerformance.database.mapper.StockStatisticsMapper;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
 import cooba.IndustryPerformance.service.StockStatisticsService;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,8 @@ public class StockStatisticsServiceTest {
     StockDetailRepository stockDetailRepository;
     @Autowired
     StockStatisticsService stockStatisticsService;
+    @Autowired
+    StockStatisticsMapper stockStatisticsMapper;
 
     @Test
     public void get() {
@@ -94,5 +98,12 @@ public class StockStatisticsServiceTest {
     @Test
     public void updateStockStatistics() {
         stockStatisticsService.updateStockStatistics("1470", LocalDate.of(2022, 4, 28), 62);
+    }
+
+    @Test
+    public void insertStockStatisticsList() {
+        List<StockStatistics> stockStatisticsList = stockStatisticsService.readStockStatisticsMonthCache("2330", 2022, 4);
+        System.out.println(stockStatisticsList);
+        stockStatisticsMapper.insertStockStatisticsList(stockStatisticsList);
     }
 }

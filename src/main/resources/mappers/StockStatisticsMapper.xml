@@ -23,8 +23,29 @@
         avg21dVolume, tradingDate)
         VALUES(#{id}, #{stockcode}, #{avgCost}, #{avg5dCost}, #{avg10dCost}, #{avg21dCost}, #{avg62dCost},
         #{avgShare}, #{avg10dVolume}, #{avg21dVolume}, #{tradingDate})
-        ON DUPLICATE KEY UPDATE avgCost=#{avgCost}, avg5dCost=#{avg5dCost}, avg10dCost=#{avg10dCost},
-        avg21dCost=#{avg21dCost}, avg62dCost=#{avg62dCost}, avgShare=#{avgShare},avg10dVolume=#{avg10dVolume},
+        ON DUPLICATE KEY UPDATE
+        avgCost=#{avgCost},
+        avg5dCost=#{avg5dCost},
+        avg10dCost=#{avg10dCost},
+        avg21dCost=#{avg21dCost},
+        avg62dCost=#{avg62dCost},
+        avgShare=#{avgShare},
+        avg10dVolume=#{avg10dVolume},
         avg21dVolume=#{avg21dVolume}
+    </insert>
+
+    <insert id="insertStockStatisticsList">
+        INSERT INTO
+        StockStatistics(id, stockcode, avgCost, avg5dCost, avg10dCost, avg21dCost, avg62dCost, avgShare, avg10dVolume,
+        avg21dVolume, tradingDate) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.stockcode}, #{item.avgCost}, #{item.avg5dCost}, #{item.avg10dCost},
+            #{item.avg21dCost}, #{item.avg62dCost}, #{item.avgShare}, #{item.avg10dVolume}, #{item.avg21dVolume},
+            #{item.tradingDate})
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        avgCost = VALUES(avgCost), avg5dCost = VALUES(avg5dCost), avg10dCost = VALUES(avg10dCost),
+        avg21dCost = VALUES(avg21dCost), avg62dCost = VALUES(avg62dCost), avgShare = VALUES(avgShare),
+        avg10dVolume = VALUES(avg10dVolume), avg21dVolume = VALUES(avg21dVolume)
     </insert>
 </mapper>

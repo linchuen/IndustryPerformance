@@ -1,5 +1,6 @@
 package cooba.IndustryPerformance.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.database.entity.StockBasicInfo.StockBasicInfo;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
@@ -21,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static cooba.IndustryPerformance.constant.RedisConstant.STOCKDETAILLIST;
+
 @Slf4j
 @Service
 public class StockService {
@@ -38,7 +41,7 @@ public class StockService {
     RedisUtility redisUtility;
 
     private String today = LocalDate.now().toString();
-
+    
     @Async("stockInfoExecutor")
     public StockBasicInfo asyncBuildStockBasicInfo(String stockcode) {
         return buildStockBasicInfo(stockcode);
@@ -105,11 +108,26 @@ public class StockService {
         }
     }
 
-    public void createStockDetailMonthCache() {
-        
+    public List<StockDetail> createStockDetailMonthCache(String stockcode, int year, int month) {
+        LocalDate date = LocalDate.of(year, month, 1);
+        List<StockDetail> stockDetailList = stockDetailRepository.findStockcodeByMonth(stockcode, year, month);
+        if (date.isBefore(LocalDate.now().minusMonths(6))) {
+            return stockDetailList;
+        }
+        redisUtility.valueObjectSet(STOCKDETAILLIST + month + ":" + stockcode, stockDetailList, 30, TimeUnit.DAYS);
+        return stockDetailList;
     }
 
     //GET
+    public List<StockDetail> readStockDetailMonthCache(String stockcode, int year, int month) {
+        List<StockDetail> stockDetailList = (List<StockDetail>) redisUtility.valueObjectGet(STOCKDETAILLIST + month + ":" + stockcode, new TypeReference<List<StockDetail>>() {
+        });
+        if (stockDetailList.isEmpty()) {
+            stockDetailList = createStockDetailMonthCache(stockcode, year, month);
+        }
+        return stockDetailList;
+    }
+
     public Optional<StockDetail> getStockDetailToday(String stockcode) {
         return getStockDetailLast_n_day(stockcode, 0);
     }
@@ -173,6 +191,7 @@ public class StockService {
         return getStockBasicInfo(stockcode).getCompanyType();
     }
 
+    //DELETE
     public void deleteAllStockDetail() {
         stockDetailRepository.deleteAll();
     }

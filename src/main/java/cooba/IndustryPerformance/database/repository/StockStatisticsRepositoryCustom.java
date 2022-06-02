@@ -10,4 +10,6 @@ public interface StockStatisticsRepositoryCustom {
     List<StockStatistics> findStockDetailStatisticsByStockcode(String stockcode, int limit);
 
     Optional<StockStatistics> findStockDetailStatisticsByStockcodeAndDate(String stockcode, LocalDate date);
+
+    List<StockStatistics> findStockcodeByMonth(String stockcode, int year, int month);
 }

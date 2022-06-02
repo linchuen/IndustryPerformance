@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -330,7 +331,7 @@ public class IndustryService {
                         .collect(Collectors.toList());
                 newstockMap = stockMap.entrySet().stream().filter(entry -> stocklist.contains(entry.getKey())).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
                 growth = getGrowth(days, newstockMap);
-                redisUtility.valueSet(key, String.valueOf(growth));
+                redisUtility.valueSet(key, String.valueOf(growth), 3, TimeUnit.DAYS);
                 log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, industryType, days, growth, stocklist);
                 break;
             case OTC:
@@ -340,12 +341,12 @@ public class IndustryService {
                         .collect(Collectors.toList());
                 newstockMap = stockMap.entrySet().stream().filter(entry -> stocklist.contains(entry.getKey())).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
                 growth = getGrowth(days, newstockMap);
-                redisUtility.valueSet(key, String.valueOf(growth));
+                redisUtility.valueSet(key, String.valueOf(growth), 3, TimeUnit.DAYS);
                 log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, industryType, days, growth, stocklist);
                 break;
             default:
                 growth = getGrowth(days, stockMap);
-                redisUtility.valueSet(key, String.valueOf(growth));
+                redisUtility.valueSet(key, String.valueOf(growth), 3, TimeUnit.DAYS);
                 log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, industryType, days, growth, stockMap);
                 break;
         }
@@ -380,7 +381,7 @@ public class IndustryService {
                         .collect(Collectors.toList());
                 newstockMap = stockMap.entrySet().stream().filter(entry -> stocklist.contains(entry.getKey())).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
                 growth = getGrowth(days, newstockMap);
-                redisUtility.valueSet(key, String.valueOf(growth));
+                redisUtility.valueSet(key, String.valueOf(growth), 3, TimeUnit.DAYS);
                 log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, subIndustryName, days, growth, stocklist);
                 break;
             case OTC:
@@ -390,12 +391,12 @@ public class IndustryService {
                         .collect(Collectors.toList());
                 newstockMap = stockMap.entrySet().stream().filter(entry -> stocklist.contains(entry.getKey())).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
                 growth = getGrowth(days, newstockMap);
-                redisUtility.valueSet(key, String.valueOf(growth));
+                redisUtility.valueSet(key, String.valueOf(growth), 3, TimeUnit.DAYS);
                 log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, subIndustryName, days, growth, stocklist);
                 break;
             default:
                 growth = getGrowth(days, stockMap);
-                redisUtility.valueSet(key, String.valueOf(growth));
+                redisUtility.valueSet(key, String.valueOf(growth), 3, TimeUnit.DAYS);
                 log.info("{}產業:{} {}日漲幅:{} 列表:{}", companyType, subIndustryName, days, growth, stockMap);
                 break;
         }

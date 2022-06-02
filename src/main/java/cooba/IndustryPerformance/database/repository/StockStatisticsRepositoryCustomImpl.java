@@ -7,6 +7,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -39,5 +40,18 @@ public class StockStatisticsRepositoryCustomImpl implements StockStatisticsRepos
         );
         AggregationResults aggregationResults = mongoTemplate.aggregate(aggregation, "stockStatistics", StockStatistics.class);
         return (Optional<StockStatistics>) aggregationResults.getUniqueMappedResult();
+    }
+
+    @Override
+    public List<StockStatistics> findStockcodeByMonth(String stockcode, int year, int month) {
+        LocalDate firstDay = LocalDate.of(year, month, 1);
+        LocalDate lastDay = firstDay.withDayOfMonth(firstDay.getMonth().length(firstDay.isLeapYear()));
+
+        Query query = new Query();
+        query.addCriteria(Criteria.where("stockcode").is(stockcode));
+        query.addCriteria(Criteria.where("tradingDate").gte(firstDay).andOperator(Criteria.where("tradingDate").lte(lastDay)));
+        query.with(Sort.by(Sort.Direction.DESC, "tradingDate"));
+        List<StockStatistics> stockStatisticsList = mongoTemplate.find(query, StockStatistics.class, "stockStatistics");
+        return stockStatisticsList;
     }
 }
