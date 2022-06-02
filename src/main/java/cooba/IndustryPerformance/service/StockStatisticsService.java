@@ -267,13 +267,13 @@ public class StockStatisticsService {
         if (date.isBefore(LocalDate.now().minusMonths(6))) {
             return stockStatisticsList;
         }
-        redisUtility.valueObjectSet(STOCKSTATISTICSLIST + month + ":" + stockcode, stockStatisticsList, 30, TimeUnit.DAYS);
+        redisUtility.valueObjectSet(STOCKSTATISTICSLIST + year + "_" + month + ":" + stockcode, stockStatisticsList, 30, TimeUnit.DAYS);
         return stockStatisticsList;
     }
 
     //GET
     public List<StockStatistics> readStockStatisticsMonthCache(String stockcode, int year, int month) {
-        List<StockStatistics> stockStatisticsList = (List<StockStatistics>) redisUtility.valueObjectGet(STOCKSTATISTICSLIST + month + ":" + stockcode, new TypeReference<List<StockStatistics>>() {
+        List<StockStatistics> stockStatisticsList = (List<StockStatistics>) redisUtility.valueObjectGet(STOCKSTATISTICSLIST + year + "_" + month + ":" + stockcode, new TypeReference<List<StockStatistics>>() {
         });
         if (stockStatisticsList == null || stockStatisticsList.isEmpty()) {
             stockStatisticsList = createStockStatisticsMonthCache(stockcode, year, month);

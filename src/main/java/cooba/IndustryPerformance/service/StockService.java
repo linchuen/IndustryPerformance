@@ -41,7 +41,7 @@ public class StockService {
     RedisUtility redisUtility;
 
     private String today = LocalDate.now().toString();
-    
+
     @Async("stockInfoExecutor")
     public StockBasicInfo asyncBuildStockBasicInfo(String stockcode) {
         return buildStockBasicInfo(stockcode);
@@ -114,15 +114,15 @@ public class StockService {
         if (date.isBefore(LocalDate.now().minusMonths(6))) {
             return stockDetailList;
         }
-        redisUtility.valueObjectSet(STOCKDETAILLIST + month + ":" + stockcode, stockDetailList, 30, TimeUnit.DAYS);
+        redisUtility.valueObjectSet(STOCKDETAILLIST + year + "_" + month + ":" + stockcode, stockDetailList, 30, TimeUnit.DAYS);
         return stockDetailList;
     }
 
     //GET
     public List<StockDetail> readStockDetailMonthCache(String stockcode, int year, int month) {
-        List<StockDetail> stockDetailList = (List<StockDetail>) redisUtility.valueObjectGet(STOCKDETAILLIST + month + ":" + stockcode, new TypeReference<List<StockDetail>>() {
+        List<StockDetail> stockDetailList = (List<StockDetail>) redisUtility.valueObjectGet(STOCKDETAILLIST + year + "_" + month + ":" + stockcode, new TypeReference<List<StockDetail>>() {
         });
-        if (stockDetailList.isEmpty()) {
+        if (stockDetailList == null || stockDetailList.isEmpty()) {
             stockDetailList = createStockDetailMonthCache(stockcode, year, month);
         }
         return stockDetailList;
