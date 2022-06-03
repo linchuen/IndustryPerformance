@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static cooba.IndustryPerformance.constant.RedisConstant.STOCKSTATISTICSLIST;
 import static cooba.IndustryPerformance.constant.StockConstant.*;
@@ -72,7 +71,7 @@ public class StockStatisticsService {
                 .map(StockDetail::getCreatedTime)
                 .filter(localdate -> !localdate.isBefore(startDate) && !localdate.isAfter(endDate))
                 .collect(Collectors.toList());
-        calculateStockDetailList(stockcode, stockDetailList, dateList);
+        calculateStockDetailList(stockcode, filterOut0StockDetailList, dateList);
     }
 
     @Async("stockExecutor")
@@ -94,15 +93,6 @@ public class StockStatisticsService {
         List<LocalDate> dateList = filterOut0StockDetailList.stream()
                 .map(StockDetail::getCreatedTime)
                 .collect(Collectors.toList());
-        calculateStockDetailList(stockcode, filterOut0StockDetailList, dateList);
-    }
-
-    public void createTodayStockStatistics(String stockcode) {
-        List<StockDetail> stockDetailList = stockDetailRepository.findTop100ByStockcodeAndCreatedTimeBeforeOrderByCreatedTimeDesc(stockcode, LocalDate.now().plusDays(1));
-        List<StockDetail> filterOut0StockDetailList = stockDetailList.stream()
-                .filter(stockDetail -> stockDetail.getPrice().compareTo(BigDecimal.ZERO) != 0)
-                .collect(Collectors.toList());
-        List<LocalDate> dateList = Stream.of(LocalDate.now()).collect(Collectors.toList());
         calculateStockDetailList(stockcode, filterOut0StockDetailList, dateList);
     }
 
@@ -215,12 +205,12 @@ public class StockStatisticsService {
                                   List<BigDecimal> avg21dCostList,
                                   List<BigDecimal> avg62dCostList) {
         synchronized (LocalcacheService.getStockcodeLock(stockcode)) {
-            Map<Integer, List<StockStatistics>> monthStatisticsMap = new ConcurrentHashMap<>();
-            Map<Integer, List<StockStatistics>> calulateMonthStatisticsMap = new ConcurrentHashMap<>();
+            Map<String, List<StockStatistics>> monthStatisticsMap = new ConcurrentHashMap<>();
+            Map<String, List<StockStatistics>> calulateMonthStatisticsMap = new ConcurrentHashMap<>();
             List<LocalDate> monthList = dateList.stream().map(date -> LocalDate.of(date.getYear(), date.getMonthValue(), 1)).distinct().collect(Collectors.toList());
             monthList.forEach(localdate -> {
-                monthStatisticsMap.put(localdate.getMonthValue(), readStockStatisticsMonthCache(stockcode, localdate.getYear(), localdate.getMonthValue()));
-                calulateMonthStatisticsMap.put(localdate.getMonthValue(), new ArrayList<>());
+                monthStatisticsMap.put(localdate.format(DateTimeFormatter.ofPattern("yyyyMM")), readStockStatisticsMonthCache(stockcode, localdate.getYear(), localdate.getMonthValue()));
+                calulateMonthStatisticsMap.put(localdate.format(DateTimeFormatter.ofPattern("yyyyMM")), new ArrayList<>());
             });
             try {
                 for (int i = 0; i < dateList.size(); i++) {
@@ -237,23 +227,28 @@ public class StockStatisticsService {
                     if (i < avg21dVolumeList.size()) stockStatistics.setAvg21dVolume(avg21dVolumeList.get(i));
                     String joinKey = stockStatistics.getTradingDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode;
                     stockStatistics.setJoinKey(joinKey);
-                    StockStatistics redisStockStatistics = monthStatisticsMap.get(stockStatistics.getTradingDate().getMonthValue())
+                    StockStatistics redisStockStatistics = monthStatisticsMap.get(stockStatistics.getTradingDate().format(DateTimeFormatter.ofPattern("yyyyMM")))
                             .stream()
                             .filter(rss -> rss.getJoinKey().equals(joinKey))
                             .findFirst()
                             .get();
                     stockStatistics.setId(redisStockStatistics.getId());
-                    calulateMonthStatisticsMap.get(stockStatistics.getTradingDate().getMonthValue()).add(stockStatistics);
+                    calulateMonthStatisticsMap.get(stockStatistics.getTradingDate().format(DateTimeFormatter.ofPattern("yyyyMM"))).add(stockStatistics);
                 }
             } catch (Exception e) {
+                log.warn("統計數據 股票代碼:{} ˇ轉換stockStatistics失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
+            }
+            try {
+                for (List<StockStatistics> resultList : calulateMonthStatisticsMap.values()) {
+                    stockStatisticsRepository.saveAll(resultList);
+                    resultList.forEach(stockStatistics -> stockStatistics.setId(stockStatistics.getJoinKey()));
+                    stockStatisticsMapper.insertStockStatisticsList(resultList);
+                }
+                log.info("統計數據 股票代碼:{} 批次寫入db完成", stockcode);
+            } catch (Exception e) {
+                e.printStackTrace();
                 log.warn("統計數據 股票代碼:{} 寫入db失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
             }
-            for (List<StockStatistics> resultList : calulateMonthStatisticsMap.values()) {
-                stockStatisticsRepository.saveAll(resultList);
-                resultList.forEach(stockStatistics -> stockStatistics.setId(stockStatistics.getJoinKey()));
-                stockStatisticsMapper.insertStockStatisticsList(resultList);
-            }
-            log.info("統計數據 股票代碼:{} 批次寫入db完成", stockcode);
             monthList.forEach(localdate -> {
                 createStockStatisticsMonthCache(stockcode, localdate.getYear(), localdate.getMonthValue());
             });

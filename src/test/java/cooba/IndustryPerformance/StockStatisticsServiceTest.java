@@ -4,6 +4,7 @@ import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
 import cooba.IndustryPerformance.database.entity.StockStatistics.StockStatistics;
 import cooba.IndustryPerformance.database.mapper.StockStatisticsMapper;
 import cooba.IndustryPerformance.database.repository.StockDetailRepository;
+import cooba.IndustryPerformance.database.repository.StockStatisticsRepository;
 import cooba.IndustryPerformance.service.StockStatisticsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,8 @@ import java.util.List;
 public class StockStatisticsServiceTest {
     @Autowired
     StockDetailRepository stockDetailRepository;
+    @Autowired
+    StockStatisticsRepository stockStatisticsRepository;
     @Autowired
     StockStatisticsService stockStatisticsService;
     @Autowired
@@ -92,7 +95,7 @@ public class StockStatisticsServiceTest {
 
     @Test
     public void calculateStockStatistics() {
-        stockStatisticsService.calculateStockStatistics("2330", LocalDate.of(2022, 2, 28), LocalDate.of(2022, 4, 1));
+        stockStatisticsService.calculateStockStatistics("1538", LocalDate.of(2021, 1, 1), LocalDate.of(2022, 5, 1));
     }
 
     @Test
@@ -102,8 +105,8 @@ public class StockStatisticsServiceTest {
 
     @Test
     public void insertStockStatisticsList() {
-        List<StockStatistics> stockStatisticsList = stockStatisticsService.readStockStatisticsMonthCache("2330", 2022, 4);
-        System.out.println(stockStatisticsList);
-        stockStatisticsMapper.insertStockStatisticsList(stockStatisticsList);
+        List<StockStatistics> stockStatisticsList = stockStatisticsRepository.findStockcodeByMonth("1538", 2021, 10);
+        stockStatisticsList.forEach(stockStatistics -> System.out.println(stockStatistics.getTradingDate()));
+        //stockStatisticsMapper.insertStockStatisticsList(stockStatisticsList);
     }
 }

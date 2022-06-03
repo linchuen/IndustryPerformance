@@ -36,9 +36,6 @@ public class ScheduleService {
     @Scheduled(cron = "0 0 15 * * *")
     private void buildIndustryStockDetailInfo() {
         industryService.buildtodayStockDetail();
-        getListedStockList().forEach(stockcode -> {
-            stockStatisticsService.createTodayStockStatistics(stockcode);
-        });
     }
 
     @Scheduled(cron = "0 0 0 1 * *")
