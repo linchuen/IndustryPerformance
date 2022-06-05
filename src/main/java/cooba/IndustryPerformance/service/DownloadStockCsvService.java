@@ -87,7 +87,7 @@ public class DownloadStockCsvService {
         Double time = stopWatch.getTotalTimeSeconds();
         timeCounterService.addTime(uuid, time);
     }
-    
+
     public void readCsvToDB(String stockcode, LocalDate date) {
         String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMM"));
         String filePath = String.format("%s\\STOCK_DAY_%s_%s.csv", csvPath, stockcode, dateStr);
@@ -110,7 +110,7 @@ public class DownloadStockCsvService {
             list = list.subList(1, list.size() - 5);
             String finalIndustryType = industryType;
             String finalCompanyType = companyType;
-            list.forEach(records -> {
+            List<StockDetail> stockDetailList = list.stream().map(records -> {
                 BigDecimal price = new BigDecimal(records[6].replace(",", "").replace("--", "0"));
                 BigDecimal lastprice = new BigDecimal(records[6].replace(",", "").replace("--", "0"));
                 BigDecimal open = new BigDecimal(records[3].replace(",", "").replace("--", "0"));
@@ -141,31 +141,66 @@ public class DownloadStockCsvService {
                         .companyType(finalCompanyType)
                         .joinKey(createdTime.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode)
                         .build();
-                stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, createdTime).ifPresentOrElse(
-                        oldStockDetail -> {
-                            stockDetail.setId(oldStockDetail.getId());
-                            stockDetailRepository.save(stockDetail);
-                        },
-                        () -> {
-                            try {
-                                stockDetailRepository.save(stockDetail);
-                            } catch (Exception e) {
-                                log.warn("股票代碼:{} 寫入mongodb失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
-                            }
-                        }
-                );
-
-                try {
-                    stockDetail.setId(createdTime.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode);
-                    stockDetailMapper.insertStockDetail(stockDetail);
-                } catch (Exception e) {
-                    log.warn("股票代碼:{} 寫入mysql失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
-                }
-            });
-            log.info("股票代碼:{} readCsvToDB成功", stockcode);
+                return stockDetail;
+            }).collect(Collectors.toList());
+            saveBatchData(stockcode, date, stockDetailList);
         } catch (Exception e) {
             log.warn("股票代碼:{} readCsvToDB失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
         }
+    }
+
+    public void saveBatchData(String stockcode, LocalDate date, List<StockDetail> stockDetailList) {
+        List<StockDetail> dbStockDetailList = stockDetailRepository.findStockcodeByMonth(stockcode, date.getYear(), date.getMonthValue());
+        if (dbStockDetailList.isEmpty()) {
+            stockDetailRepository.saveAll(stockDetailList);
+            return;
+        }
+        if (dbStockDetailList.size() != stockDetailList.size()) {
+            saveData(stockDetailList);
+            return;
+        }
+        try {
+            stockDetailList.forEach(stockDetail -> {
+                StockDetail oldStockDetail = dbStockDetailList.stream().filter(dbStockDetail -> stockDetail.getJoinKey().equals(dbStockDetail.getJoinKey())).findFirst().get();
+                stockDetail.setId(oldStockDetail.getId());
+            });
+            stockDetailRepository.saveAll(stockDetailList);
+
+            stockDetailList.forEach(stockDetail -> {
+                stockDetail.setId(stockDetail.getCreatedTime().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode);
+            });
+            stockDetailMapper.insertStockDetailList(stockDetailList);
+            log.info("股票代碼:{} readCsvToDB成功", stockcode);
+        } catch (Exception e) {
+            log.warn("股票代碼:{} 批次寫入db失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
+        }
+    }
+
+    public void saveData(List<StockDetail> stockDetailList) {
+        stockDetailList.forEach(stockDetail -> {
+            String stockcode = stockDetail.getStockcode();
+            LocalDate createdTime = stockDetail.getCreatedTime();
+            stockDetailRepository.findByStockcodeAndCreatedTime(stockcode, createdTime).ifPresentOrElse(
+                    oldStockDetail -> {
+                        stockDetail.setId(oldStockDetail.getId());
+                        stockDetailRepository.save(stockDetail);
+                    },
+                    () -> {
+                        try {
+                            stockDetailRepository.save(stockDetail);
+                        } catch (Exception e) {
+                            log.warn("股票代碼:{} 寫入mongodb失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
+                        }
+                    }
+            );
+
+            try {
+                stockDetail.setId(createdTime.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode);
+                stockDetailMapper.insertStockDetail(stockDetail);
+            } catch (Exception e) {
+                log.warn("股票代碼:{} 寫入mysql失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
+            }
+        });
     }
 
     public List<String> organizeFile(LocalDate date) {

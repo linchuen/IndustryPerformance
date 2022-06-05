@@ -29,6 +29,28 @@
         lowest=#{lowest}, tradingVolume=#{tradingVolume}, industryType=#{industryType}, companyType=#{companyType}
     </insert>
 
+    <insert id="insertStockDetailList" parameterType="list">
+        INSERT INTO
+        StockDetail(id, stockcode, name, industryType, companyType, price, lastprice, open, highest, lowest,
+        tradingVolume, createdTime, sharesTraded, turnover)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.stockcode}, #{item.name}, #{item.industryType}, #{item.companyType}, #{item.price},
+            #{item.lastprice}, #{item.open},
+            #{item.highest}, #{item.lowest}, #{item.tradingVolume}, #{item.createdTime}, #{item.sharesTraded},
+            #{item.turnover})
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        price = VALUES(price),
+        lastprice = VALUES(lastprice),
+        open = VALUES(open),
+        highest = VALUES(highest),
+        lowest = VALUES(lowest),
+        tradingVolume = VALUES(tradingVolume),
+        industryType = VALUES(industryType),
+        companyType = VALUES(companyType)
+    </insert>
+
     <select id="findStockDetail" resultType="long">
         SELECT id FROM StockDetail WHERE stockcode=#{stockcode} AND createdTime=#{createdTime}
     </select>

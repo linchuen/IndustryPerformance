@@ -22,4 +22,5 @@ public class TimeCounter {
     private String message;
     private Double totalSeconds;
     private LocalDateTime createTime;
+    private String comment;
 }

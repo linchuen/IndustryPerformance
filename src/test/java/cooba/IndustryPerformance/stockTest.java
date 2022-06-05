@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 @SpringBootTest
 public class stockTest {
@@ -23,8 +24,10 @@ public class stockTest {
 
     @Test
     public void Test() throws JsonProcessingException {
-        StockDetail stockDetail = stockService.buildStockDetail("2330");
-        System.out.println(objectMapper.writeValueAsString(stockDetail));
+        String uuid = UUID.randomUUID().toString();
+        System.out.println(uuid);
+//        StockDetail stockDetail = stockService.buildStockDetail("2330");
+//        System.out.println(objectMapper.writeValueAsString(stockDetail));
     }
 
     @Test
@@ -42,8 +45,8 @@ public class stockTest {
 
     @Test
     public void findStockcodeByMonth() {
-        stockService.createStockDetailMonthCache("2330", 2022, 4);
-        List<StockDetail> stockDetailList = stockDetailRepository.findStockcodeByMonth("2330", 2022, 4);
-        System.out.println(stockDetailList);
+//        stockService.createStockDetailMonthCache("2330", 2022, 4);
+        List<StockDetail> stockDetailList = stockDetailRepository.findStockcodeByMonth("2330", 2022, 5);
+        stockDetailList.forEach(System.out::println);
     }
 }
