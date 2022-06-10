@@ -26,12 +26,14 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static cooba.IndustryPerformance.constant.CommonConstant.YM;
+import static cooba.IndustryPerformance.constant.CommonConstant.YMD;
 
 @Slf4j
 @Service
@@ -48,7 +50,7 @@ public class DownloadStockCsvService {
     TimeCounterService timeCounterService;
 
     public boolean downloadStockCsv(String stockcode, LocalDate date) {
-        String filePath = String.format("%s\\STOCK_DAY_%s_%s.csv", csvPath, stockcode, date.format(DateTimeFormatter.ofPattern("yyyyMM")));
+        String filePath = String.format("%s\\STOCK_DAY_%s_%s.csv", csvPath, stockcode, date.format(YM));
         File file = new File(filePath);
         if (!file.exists()) {
             WebDriverManager.chromedriver().setup();
@@ -60,7 +62,7 @@ public class DownloadStockCsvService {
             chromeOptions.setExperimentalOption("prefs", chromePrefs);
             WebDriver driver = new ChromeDriver(chromeOptions);
             try {
-                String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                String dateStr = date.format(YMD);
                 driver.get(String.format("https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=csv&date=%s&stockNo=%s", dateStr, stockcode));
                 Thread.sleep(2000);
                 driver.quit();
@@ -90,7 +92,7 @@ public class DownloadStockCsvService {
     }
 
     public void readCsvToDB(String stockcode, LocalDate date) {
-        String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMM"));
+        String dateStr = date.format(YM);
         String filePath = String.format("%s\\STOCK_DAY_%s_%s.csv", csvPath, stockcode, dateStr);
         File file = new File(filePath);
         if (file.length() / 1024 == 0) return;
@@ -140,7 +142,7 @@ public class DownloadStockCsvService {
                         .createdTime(createdTime)
                         .industryType(finalIndustryType)
                         .companyType(finalCompanyType)
-                        .joinKey(createdTime.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode)
+                        .joinKey(createdTime.format(YMD) + stockcode)
                         .build();
                 return stockDetail;
             }).collect(Collectors.toList());
@@ -173,7 +175,7 @@ public class DownloadStockCsvService {
         stockDetailRepository.saveAll(stockDetailList);
 
         stockDetailList.forEach(stockDetail -> {
-            stockDetail.setId(stockDetail.getCreatedTime().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode);
+            stockDetail.setId(stockDetail.getCreatedTime().format(YMD) + stockcode);
         });
         stockDetailMapper.insertStockDetailList(stockDetailList);
         log.info("股票代碼:{} readCsvToDB成功", stockcode);
@@ -198,7 +200,7 @@ public class DownloadStockCsvService {
             );
 
             try {
-                stockDetail.setId(createdTime.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode);
+                stockDetail.setId(createdTime.format(YMD) + stockcode);
                 stockDetailMapper.insertStockDetail(stockDetail);
             } catch (Exception e) {
                 log.warn("股票代碼:{} 寫入mysql失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
@@ -207,7 +209,7 @@ public class DownloadStockCsvService {
     }
 
     public List<String> organizeFile(LocalDate date) {
-        String dateStr = date.format(DateTimeFormatter.ofPattern("yyyyMM"));
+        String dateStr = date.format(YM);
         String folderStr = csvPath + "\\" + dateStr;
         new File(folderStr).mkdir();
 

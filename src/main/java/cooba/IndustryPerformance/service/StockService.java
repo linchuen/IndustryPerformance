@@ -1,6 +1,5 @@
 package cooba.IndustryPerformance.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.database.entity.StockBasicInfo.StockBasicInfo;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
@@ -14,7 +13,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -22,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static cooba.IndustryPerformance.constant.RedisConstant.STOCKDETAILLIST;
+import static cooba.IndustryPerformance.constant.CommonConstant.YMD;
 
 @Slf4j
 @Service
@@ -92,7 +90,7 @@ public class StockService {
                             log.info("股票代碼:{} 交易日期:{} 寫入mongodb成功", stockcode, stockDetail.getCreatedTime());
                             redisUtility.valueObjectSet(RedisConstant.STOCKDETAIL + today + ":" + stockcode, stockDetail, 90, TimeUnit.DAYS);
                             try {
-                                stockDetail.setId(stockDetail.getCreatedTime().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode);
+                                stockDetail.setId(stockDetail.getCreatedTime().format(YMD) + stockcode);
                                 stockDetailMapper.insertStockDetail(stockDetail);
                                 log.info("股票代碼:{} 交易日期:{} 寫入mysql成功", stockcode, stockDetail.getCreatedTime());
                             } catch (Exception e) {
@@ -108,26 +106,7 @@ public class StockService {
         }
     }
 
-    public List<StockDetail> createStockDetailMonthCache(String stockcode, int year, int month) {
-        LocalDate date = LocalDate.of(year, month, 1);
-        List<StockDetail> stockDetailList = stockDetailRepository.findStockcodeByMonth(stockcode, year, month);
-        if (date.isBefore(LocalDate.now().minusMonths(6))) {
-            return stockDetailList;
-        }
-        redisUtility.valueObjectSet(STOCKDETAILLIST + year + "_" + month + ":" + stockcode, stockDetailList, 30, TimeUnit.DAYS);
-        return stockDetailList;
-    }
-
     //GET
-    public List<StockDetail> readStockDetailMonthCache(String stockcode, int year, int month) {
-        List<StockDetail> stockDetailList = (List<StockDetail>) redisUtility.valueObjectGet(STOCKDETAILLIST + year + "_" + month + ":" + stockcode, new TypeReference<List<StockDetail>>() {
-        });
-        if (stockDetailList == null || stockDetailList.isEmpty()) {
-            stockDetailList = createStockDetailMonthCache(stockcode, year, month);
-        }
-        return stockDetailList;
-    }
-
     public Optional<StockDetail> getStockDetailToday(String stockcode) {
         return getStockDetailLast_n_day(stockcode, 0);
     }

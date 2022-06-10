@@ -7,9 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
+
+import static cooba.IndustryPerformance.constant.CommonConstant.YMD;
 
 @RestController
 public class StockController {
@@ -43,8 +44,8 @@ public class StockController {
 
     @GetMapping("stock/interval")
     public List<StockDetail> getStockDetailBetween(@RequestParam("stockcode") String stockcode, @RequestParam("startDate") String startDateStr, @RequestParam("endDate") String endDateStr) {
-        LocalDate startDate = LocalDate.parse(startDateStr, DateTimeFormatter.ofPattern("yyyyMMdd"));
-        LocalDate endDate = LocalDate.parse(endDateStr, DateTimeFormatter.ofPattern("yyyyMMdd"));
+        LocalDate startDate = LocalDate.parse(startDateStr, YMD);
+        LocalDate endDate = LocalDate.parse(endDateStr, YMD);
         return stockService.getStockDetailBetween(stockcode, startDate, endDate);
     }
 
