@@ -30,7 +30,9 @@ public class RedisCacheUtility {
         if (date.isBefore(LocalDate.now().minusMonths(6))) {
             return stockDetailList;
         }
-        redisUtility.valueObjectSet(STOCKDETAILLIST + year + "_" + month + ":" + stockcode, stockDetailList, 30, TimeUnit.DAYS);
+        if (!stockDetailList.isEmpty()) {
+            redisUtility.valueObjectSet(STOCKDETAILLIST + year + "_" + month + ":" + stockcode, stockDetailList, 30, TimeUnit.DAYS);
+        }
         return stockDetailList;
     }
 
@@ -50,7 +52,9 @@ public class RedisCacheUtility {
         if (date.isBefore(LocalDate.now().minusMonths(6))) {
             return stockStatisticsList;
         }
-        redisUtility.valueObjectSet(STOCKSTATISTICSLIST + year + "_" + month + ":" + stockcode, stockStatisticsList, 30, TimeUnit.DAYS);
+        if (!stockStatisticsList.isEmpty()) {
+            redisUtility.valueObjectSet(STOCKSTATISTICSLIST + year + "_" + month + ":" + stockcode, stockStatisticsList, 30, TimeUnit.DAYS);
+        }
         return stockStatisticsList;
     }
 
