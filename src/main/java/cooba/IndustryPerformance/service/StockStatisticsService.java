@@ -16,6 +16,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StopWatch;
 
 import java.math.BigDecimal;
@@ -118,16 +119,20 @@ public class StockStatisticsService {
         List<BigDecimal> avg10dVolumeList = countNdAvgList(volumeList, 10);
         List<BigDecimal> avg21dVolumeList = countNdAvgList(volumeList, 21);
 
-        saveListBatchData(stockcode,
-                dateList,
-                avgShareList,
-                avg10dVolumeList,
-                avg21dVolumeList,
-                avgCostList,
-                avg5dCostList,
-                avg10dCostList,
-                avg21dCostList,
-                avg62dCostList);
+        try {
+            saveListBatchData(stockcode,
+                    dateList,
+                    avgShareList,
+                    avg10dVolumeList,
+                    avg21dVolumeList,
+                    avgCostList,
+                    avg5dCostList,
+                    avg10dCostList,
+                    avg21dCostList,
+                    avg62dCostList);
+        } catch (Exception e) {
+            log.warn("統計數據 股票代碼:{} 批次寫入db失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
+        }
     }
 
     public List<BigDecimal> countNdAvgList(List<BigDecimal> inputAvgList, int outputN) {
@@ -148,6 +153,7 @@ public class StockStatisticsService {
         return avgNdCostList;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void saveListData(String stockcode,
                              List<LocalDate> dateList,
                              List<BigDecimal> avgShareList,
@@ -159,41 +165,38 @@ public class StockStatisticsService {
                              List<BigDecimal> avg21dCostList,
                              List<BigDecimal> avg62dCostList) {
         synchronized (LocalcacheService.getStockcodeLock(stockcode)) {
-            try {
-                for (int i = 0; i < dateList.size(); i++) {
-                    StockStatistics stockStatistics = new StockStatistics();
-                    stockStatistics.setStockcode(stockcode);
-                    stockStatistics.setTradingDate(dateList.get(i));
-                    stockStatistics.setAvgShare(avgShareList.get(i));
-                    stockStatistics.setAvgCost(avgCostList.get(i));
-                    if (i < avg5dCostList.size()) stockStatistics.setAvg5dCost(avg5dCostList.get(i));
-                    if (i < avg10dCostList.size()) stockStatistics.setAvg10dCost(avg10dCostList.get(i));
-                    if (i < avg21dCostList.size()) stockStatistics.setAvg21dCost(avg21dCostList.get(i));
-                    if (i < avg62dCostList.size()) stockStatistics.setAvg62dCost(avg62dCostList.get(i));
-                    if (i < avg10dVolumeList.size()) stockStatistics.setAvg10dVolume(avg10dVolumeList.get(i));
-                    if (i < avg21dVolumeList.size()) stockStatistics.setAvg21dVolume(avg21dVolumeList.get(i));
-                    String joinKey = stockStatistics.getTradingDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode;
-                    stockStatistics.setJoinKey(joinKey);
-                    stockStatisticsRepository.findByStockcodeAndTradingDate(stockcode, dateList.get(i)).ifPresentOrElse(
-                            oldStockStatistics -> {
-                                stockStatistics.setId(oldStockStatistics.getId());
-                                stockStatisticsRepository.save(stockStatistics);
-                            },
-                            () -> {
-                                stockStatisticsRepository.save(stockStatistics);
-                            }
-                    );
+            for (int i = 0; i < dateList.size(); i++) {
+                StockStatistics stockStatistics = new StockStatistics();
+                stockStatistics.setStockcode(stockcode);
+                stockStatistics.setTradingDate(dateList.get(i));
+                stockStatistics.setAvgShare(avgShareList.get(i));
+                stockStatistics.setAvgCost(avgCostList.get(i));
+                if (i < avg5dCostList.size()) stockStatistics.setAvg5dCost(avg5dCostList.get(i));
+                if (i < avg10dCostList.size()) stockStatistics.setAvg10dCost(avg10dCostList.get(i));
+                if (i < avg21dCostList.size()) stockStatistics.setAvg21dCost(avg21dCostList.get(i));
+                if (i < avg62dCostList.size()) stockStatistics.setAvg62dCost(avg62dCostList.get(i));
+                if (i < avg10dVolumeList.size()) stockStatistics.setAvg10dVolume(avg10dVolumeList.get(i));
+                if (i < avg21dVolumeList.size()) stockStatistics.setAvg21dVolume(avg21dVolumeList.get(i));
+                String joinKey = stockStatistics.getTradingDate().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode;
+                stockStatistics.setJoinKey(joinKey);
+                stockStatisticsRepository.findByStockcodeAndTradingDate(stockcode, dateList.get(i)).ifPresentOrElse(
+                        oldStockStatistics -> {
+                            stockStatistics.setId(oldStockStatistics.getId());
+                            stockStatisticsRepository.save(stockStatistics);
+                        },
+                        () -> {
+                            stockStatisticsRepository.save(stockStatistics);
+                        }
+                );
 
-                    stockStatistics.setId(joinKey);
-                    stockStatisticsMapper.insertStockStatistics(stockStatistics);
-                }
-                log.info("統計數據 股票代碼:{} 寫入db完成", stockcode);
-            } catch (Exception e) {
-                log.warn("統計數據 股票代碼:{} 寫入db失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
+                stockStatistics.setId(joinKey);
+                stockStatisticsMapper.insertStockStatistics(stockStatistics);
             }
+            log.info("統計數據 股票代碼:{} 寫入db完成", stockcode);
         }
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void saveListBatchData(String stockcode,
                                   List<LocalDate> dateList,
                                   List<BigDecimal> avgShareList,
@@ -238,17 +241,14 @@ public class StockStatisticsService {
             } catch (Exception e) {
                 log.warn("統計數據 股票代碼:{} ˇ轉換stockStatistics失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
             }
-            try {
-                for (List<StockStatistics> resultList : calulateMonthStatisticsMap.values()) {
-                    stockStatisticsRepository.saveAll(resultList);
-                    resultList.forEach(stockStatistics -> stockStatistics.setId(stockStatistics.getJoinKey()));
-                    stockStatisticsMapper.insertStockStatisticsList(resultList);
-                }
-                log.info("統計數據 股票代碼:{} 批次寫入db完成", stockcode);
-            } catch (Exception e) {
-                e.printStackTrace();
-                log.warn("統計數據 股票代碼:{} 寫入db失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
+
+            for (List<StockStatistics> resultList : calulateMonthStatisticsMap.values()) {
+                stockStatisticsRepository.saveAll(resultList);
+                resultList.forEach(stockStatistics -> stockStatistics.setId(stockStatistics.getJoinKey()));
+                stockStatisticsMapper.insertStockStatisticsList(resultList);
             }
+            log.info("統計數據 股票代碼:{} 批次寫入db完成", stockcode);
+
             monthList.forEach(localdate -> {
                 createStockStatisticsMonthCache(stockcode, localdate.getYear(), localdate.getMonthValue());
             });

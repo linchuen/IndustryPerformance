@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StopWatch;
 
 import java.io.File;
@@ -143,12 +144,17 @@ public class DownloadStockCsvService {
                         .build();
                 return stockDetail;
             }).collect(Collectors.toList());
-            saveBatchData(stockcode, date, stockDetailList);
+            try {
+                saveBatchData(stockcode, date, stockDetailList);
+            } catch (Exception e) {
+                log.warn("股票代碼:{} 批次寫入db失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
+            }
         } catch (Exception e) {
             log.warn("股票代碼:{} readCsvToDB失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
         }
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void saveBatchData(String stockcode, LocalDate date, List<StockDetail> stockDetailList) {
         List<StockDetail> dbStockDetailList = stockDetailRepository.findStockcodeByMonth(stockcode, date.getYear(), date.getMonthValue());
         if (dbStockDetailList.isEmpty()) {
@@ -159,21 +165,18 @@ public class DownloadStockCsvService {
             saveData(stockDetailList);
             return;
         }
-        try {
-            stockDetailList.forEach(stockDetail -> {
-                StockDetail oldStockDetail = dbStockDetailList.stream().filter(dbStockDetail -> stockDetail.getJoinKey().equals(dbStockDetail.getJoinKey())).findFirst().get();
-                stockDetail.setId(oldStockDetail.getId());
-            });
-            stockDetailRepository.saveAll(stockDetailList);
 
-            stockDetailList.forEach(stockDetail -> {
-                stockDetail.setId(stockDetail.getCreatedTime().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode);
-            });
-            stockDetailMapper.insertStockDetailList(stockDetailList);
-            log.info("股票代碼:{} readCsvToDB成功", stockcode);
-        } catch (Exception e) {
-            log.warn("股票代碼:{} 批次寫入db失敗 class:{} error:{}", stockcode, getClass().getName(), e.getMessage());
-        }
+        stockDetailList.forEach(stockDetail -> {
+            StockDetail oldStockDetail = dbStockDetailList.stream().filter(dbStockDetail -> stockDetail.getJoinKey().equals(dbStockDetail.getJoinKey())).findFirst().get();
+            stockDetail.setId(oldStockDetail.getId());
+        });
+        stockDetailRepository.saveAll(stockDetailList);
+
+        stockDetailList.forEach(stockDetail -> {
+            stockDetail.setId(stockDetail.getCreatedTime().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + stockcode);
+        });
+        stockDetailMapper.insertStockDetailList(stockDetailList);
+        log.info("股票代碼:{} readCsvToDB成功", stockcode);
     }
 
     public void saveData(List<StockDetail> stockDetailList) {
