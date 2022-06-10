@@ -234,7 +234,7 @@ public class StockStatisticsService {
 
                     List<StockStatistics> redisStockStatisticsList = monthStatisticsMap.get(stockStatistics.getTradingDate().format(YM));
                     if (!redisStockStatisticsList.isEmpty()) {
-                        StockStatistics redisStockStatistics = monthStatisticsMap.get(stockStatistics.getTradingDate().format(YM))
+                        StockStatistics redisStockStatistics = redisStockStatisticsList
                                 .stream()
                                 .filter(rss -> rss.getJoinKey().equals(joinKey))
                                 .findFirst()
