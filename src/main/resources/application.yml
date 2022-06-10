@@ -14,9 +14,7 @@ spring:
 
   data:
     mongodb:
-      host: ${MONGOHOST:localhost}
-      port: ${MONGOPORT:27017}
-      database: ${MONGODB:IndustryPerformance}
+      uri: ${MONGODBURL:mongodb://localhost:27017,localhost:27027,localhost:27037/IndustryPerformance}
       auto-index-creation: true
     redis:
       database: 0
