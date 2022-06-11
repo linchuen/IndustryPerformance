@@ -17,4 +17,9 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
     protected String getDatabaseName() {
         return "IndustryPerformance";
     }
+
+    @Override
+    protected boolean autoIndexCreation() {
+        return true;
+    }
 }
