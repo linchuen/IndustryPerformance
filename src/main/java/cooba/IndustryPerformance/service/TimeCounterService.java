@@ -1,9 +1,8 @@
 package cooba.IndustryPerformance.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cooba.IndustryPerformance.database.entity.TimeCounter.TimeCounter;
-import cooba.IndustryPerformance.database.repository.TimeCounterRepository;
+import cooba.IndustryPerformance.database.mapper.TimeCounterMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,9 +17,9 @@ import java.util.concurrent.*;
 @Service
 public class TimeCounterService {
     @Autowired
-    TimeCounterRepository timeCounterRepository;
-    @Autowired
     ObjectMapper objectMapper;
+    @Autowired
+    TimeCounterMapper timeCounterMapper;
 
     private static Map<String, BlockingQueue<Double>> counterMap = new ConcurrentHashMap<>();
     private static Map<String, TimeCounter> resultMap = new ConcurrentHashMap<>();
@@ -62,11 +61,11 @@ public class TimeCounterService {
                 try {
                     String uuid = stringBlockingQueueEntry.getKey();
                     BlockingQueue<Double> timeCounter = stringBlockingQueueEntry.getValue();
-                    Double time = timeCounter.poll(5, TimeUnit.MINUTES);
+                    Double time = timeCounter.poll(1, TimeUnit.MINUTES);
                     if (time == null) {
                         TimeCounter result = resultMap.get(uuid);
                         log.info("uuid: {} TimeCounter總夠耗時:{} 儲存db成功", uuid, result.getTotalSeconds());
-                        timeCounterRepository.save(result);
+                        timeCounterMapper.insert(result);
                         counterMap.remove(uuid);
                         resultMap.remove(uuid);
                         log.info(objectMapper.writeValueAsString(counterMap));
@@ -77,9 +76,7 @@ public class TimeCounterService {
                         result.setTotalSeconds(timer);
                         resultMap.put(uuid, result);
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (JsonProcessingException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             });
