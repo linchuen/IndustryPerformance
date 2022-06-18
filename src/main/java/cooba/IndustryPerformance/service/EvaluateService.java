@@ -31,13 +31,12 @@ public class EvaluateService {
     private final int days = 10;
 
     @Async("stockExecutor")
-    public EvaluateEntity createEvaluateEntityAsync(String uuid, List<StockDetailStatistics> statisticsList, int year, int month, String stockcode) {
+    public void createEvaluateEntityAsync(String uuid, List<StockDetailStatistics> statisticsList, int year, int month, String stockcode) {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        EvaluateEntity evaluateEntity = createEvaluateEntity(statisticsList, year, month, stockcode);
+        createEvaluateEntity(statisticsList, year, month, stockcode);
         stopWatch.stop();
         timeCounterService.addTime(uuid, stopWatch.getTotalTimeSeconds());
-        return evaluateEntity;
     }
 
     @Transactional
@@ -45,6 +44,8 @@ public class EvaluateService {
         if (statisticsList == null) {
             statisticsList = stockStatisticsService.getStockcodeStatisticsList(stockcode, year, month, 91);
         }
+        if (statisticsList.isEmpty()) return new EvaluateEntity();
+
         EvaluateEntity evaluateEntity = EvaluateEntity.builder()
                 .stockcode(stockcode)
                 .year(year)
@@ -53,13 +54,13 @@ public class EvaluateService {
                 .build();
         simpleEvaluateMA(evaluateEntity, statisticsList, stockcode);
 
-        List<BigDecimal> MA5SlopeList = evaluateMA(statisticsList.stream().map(StockDetailStatistics::get平均5日成本).collect(Collectors.toList()));
+        List<BigDecimal> MA5SlopeList = evaluateMA(statisticsList.stream().map(StockDetailStatistics::get平均5日成本).collect(Collectors.toList()), stockcode);
         evaluateEntity.setMA5SlopeList(MA5SlopeList);
-        List<BigDecimal> MA10SlopeList = evaluateMA(statisticsList.stream().map(StockDetailStatistics::get平均10日成本).collect(Collectors.toList()));
+        List<BigDecimal> MA10SlopeList = evaluateMA(statisticsList.stream().map(StockDetailStatistics::get平均10日成本).collect(Collectors.toList()), stockcode);
         evaluateEntity.setMA10SlopeList(MA10SlopeList);
-        List<BigDecimal> MA21SlopeList = evaluateMA(statisticsList.stream().map(StockDetailStatistics::get平均21日成本).collect(Collectors.toList()));
+        List<BigDecimal> MA21SlopeList = evaluateMA(statisticsList.stream().map(StockDetailStatistics::get平均21日成本).collect(Collectors.toList()), stockcode);
         evaluateEntity.setMA21SlopeList(MA21SlopeList);
-        List<BigDecimal> MA62SlopeList = evaluateMA(statisticsList.stream().map(StockDetailStatistics::get平均62日成本).collect(Collectors.toList()));
+        List<BigDecimal> MA62SlopeList = evaluateMA(statisticsList.stream().map(StockDetailStatistics::get平均62日成本).collect(Collectors.toList()), stockcode);
         evaluateEntity.setMA62SlopeList(MA62SlopeList);
 
         List<BigDecimal> sdList = evaluateSD(statisticsList.stream().map(StockDetailStatistics::get平均股數).collect(Collectors.toList()));
@@ -88,7 +89,7 @@ public class EvaluateService {
 
     }
 
-    public EvaluateEntity simpleEvaluateMA(EvaluateEntity evaluateEntity, List<StockDetailStatistics> statisticsList, String stockcode) {
+    public void simpleEvaluateMA(EvaluateEntity evaluateEntity, List<StockDetailStatistics> statisticsList, String stockcode) {
         evaluateEntity.setMA5SlopeAbove0(statisticsList.get(0).get平均5日成本().compareTo(statisticsList.get(statisticsList.size() - 1).get平均5日成本()) < 0);
         evaluateEntity.setMA10SlopeAbove0(statisticsList.get(0).get平均10日成本().compareTo(statisticsList.get(statisticsList.size() - 1).get平均10日成本()) < 0);
         evaluateEntity.setMA21SlopeAbove0(statisticsList.get(0).get平均21日成本().compareTo(statisticsList.get(statisticsList.size() - 1).get平均21日成本()) < 0);
@@ -126,11 +127,10 @@ public class EvaluateService {
         evaluateEntity.setMA5AboveMA10(MA5AboveMA10 > statisticsList.size() * 0.8);
         evaluateEntity.setMA10AboveMA21(MA10AboveMA21 > statisticsList.size() * 0.8);
         evaluateEntity.setMA21AboveMA62(MA21AboveMA62 > statisticsList.size() * 0.8);
-
-        return evaluateEntity;
+        log.info("完成簡單評估平均成本線 股票: {}", stockcode);
     }
 
-    public List<BigDecimal> evaluateMA(List<BigDecimal> bigDecimalList) {
+    public List<BigDecimal> evaluateMA(List<BigDecimal> bigDecimalList, String stockcode) {
         ListIterator<BigDecimal> iterator = bigDecimalList.listIterator();
         BigDecimal prev = null;
         boolean isPositive = true;
@@ -155,8 +155,8 @@ public class EvaluateService {
         }
         changingQuene.add(bigDecimalList.get(bigDecimalList.size() - 1));
         counterQuene.add(counter);
-        log.info("計算轉折點的Quene:{}", changingQuene);
-        log.info("計算轉折所需交易天數的Quene:{}", counterQuene);
+        log.info("{} 計算轉折點的Quene: {}", stockcode, changingQuene);
+        log.info("{} 計算轉折所需交易天數的Quene: {}", stockcode, counterQuene);
 
         BigDecimal first = changingQuene.poll();
         BigDecimal positiveResult = new BigDecimal(0);
@@ -175,11 +175,11 @@ public class EvaluateService {
             }
             first = second;
         }
-        log.info("漲幅總和:{}", positiveResult);
-        log.info("漲幅天數總和:{}", positiveCounter);
+        log.info("{} 漲幅總和: {}", stockcode, positiveResult);
+        log.info("{} 漲幅天數總和: {}", stockcode, positiveCounter);
 
-        log.info("跌幅總和:{}", negativeResult);
-        log.info("跌幅天數總和:{}", negativeCounter);
+        log.info("{} 跌幅總和: {}", stockcode, negativeResult);
+        log.info("{} 跌幅天數總和: {}", stockcode, negativeCounter);
 
         List<BigDecimal> resultList = new ArrayList<>();
         resultList.add(positiveCounter == 0 ? new BigDecimal(0) : positiveResult.divide(BigDecimal.valueOf(positiveCounter), 2, RoundingMode.HALF_UP));

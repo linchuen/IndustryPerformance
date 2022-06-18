@@ -4,7 +4,6 @@ import cooba.IndustryPerformance.constant.KafkaConstant;
 import cooba.IndustryPerformance.entity.StockCsvInfo;
 import cooba.IndustryPerformance.service.IndustryService;
 import cooba.IndustryPerformance.service.SkipDateService;
-import cooba.IndustryPerformance.service.StockStatisticsService;
 import cooba.IndustryPerformance.service.TimeCounterService;
 import cooba.IndustryPerformance.utility.KafkaSender;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,8 +22,6 @@ public class ScheduleService {
     KafkaSender kafkaSender;
     @Autowired
     SkipDateService skipDateService;
-    @Autowired
-    StockStatisticsService stockStatisticsService;
     @Autowired
     TimeCounterService timeCounterService;
 
