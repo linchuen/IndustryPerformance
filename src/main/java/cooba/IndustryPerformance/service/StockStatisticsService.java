@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static cooba.IndustryPerformance.constant.CommonConstant.YM;
 import static cooba.IndustryPerformance.constant.CommonConstant.YMD;
@@ -268,12 +269,43 @@ public class StockStatisticsService {
     }
 
     public List<StockDetailStatistics> getStockcodeStatisticsList(String stockcode, int limit) {
-        List<StockDetailStatistics> stockDetailStatisticsList = stockStatisticsRepository.findStockDetailStatisticsByStockcode(stockcode, limit)
-                .stream()
-                .map(stockStatistics -> StockDetailStatistics.convert(stockStatistics))
-                .collect(Collectors.toList());
-        Collections.reverse(stockDetailStatisticsList);
-        return stockDetailStatisticsList;
+        LocalDate temp = LocalDate.now();
+        return getStockcodeStatisticsList(stockcode, temp.getYear(), temp.getMonthValue(), limit);
+    }
+
+    public List<StockDetailStatistics> getStockcodeStatisticsList(String stockcode, Integer year, int month, int limit) {
+        LocalDate temp = LocalDate.of(year, month, 1);
+        List<StockDetailStatistics> stockDetailStatisticsList = new ArrayList<>();
+        while (stockDetailStatisticsList.size() < limit) {
+            temp = temp.minusMonths(1);
+            List<StockStatistics> stockStatisticsList = redisCacheUtility.readStockStatisticsMonthCache(stockcode, temp.getYear(), temp.getMonthValue());
+            List<StockDetail> stockDetailList = redisCacheUtility.readStockDetailMonthCache(stockcode, temp.getYear(), temp.getMonthValue());
+            stockDetailList = stockDetailList.stream().filter(stockDetail -> stockDetail.getPrice().compareTo(BigDecimal.ZERO) != 0).collect(Collectors.toList());
+            if (stockStatisticsList.size() == stockDetailList.size()) {
+                for (int i = 0; i < stockStatisticsList.size(); i++) {
+                    stockStatisticsList.get(i).setStockDetail(Stream.of(stockDetailList.get(i)).collect(Collectors.toList()));
+                }
+            } else {
+                log.warn("stockStatisticsList 與 stockDetailList 數量不一致 股票:{} 月份:{}", stockcode, temp.getMonthValue());
+                stockDetailList = redisCacheUtility.createStockDetailMonthCache(stockcode, temp.getYear(), temp.getMonthValue());
+                stockDetailList = stockDetailList.stream().filter(stockDetail -> stockDetail.getPrice().compareTo(BigDecimal.ZERO) != 0).collect(Collectors.toList());
+                stockStatisticsList = redisCacheUtility.createStockStatisticsMonthCache(stockcode, temp.getYear(), temp.getMonthValue());
+                if (stockStatisticsList.size() == stockDetailList.size()) {
+                    for (int i = 0; i < stockStatisticsList.size(); i++) {
+                        stockStatisticsList.get(i).setStockDetail(Stream.of(stockDetailList.get(i)).collect(Collectors.toList()));
+                    }
+                }
+            }
+            
+            stockDetailStatisticsList.addAll(stockStatisticsList
+                    .stream()
+                    .map(StockDetailStatistics::convert)
+                    .collect(Collectors.toList()));
+
+        }
+        List<StockDetailStatistics> resultList = stockDetailStatisticsList.subList(0, limit);
+        Collections.reverse(stockDetailStatisticsList.subList(0, limit));
+        return resultList;
     }
 
     public boolean updateStockStatistics(String stockcode, LocalDate date, int n) {

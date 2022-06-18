@@ -95,7 +95,7 @@ public class StockStatisticsServiceTest {
 
     @Test
     public void calculateStockStatistics() {
-        stockStatisticsService.calculateStockStatistics("1538", LocalDate.of(2021, 1, 1), LocalDate.of(2022, 5, 1));
+        stockStatisticsService.calculateStockStatistics("4770", LocalDate.of(2021, 1, 1), LocalDate.of(2022, 6, 1));
     }
 
     @Test
