@@ -84,12 +84,7 @@ public class StockStatisticsController {
 
     @GetMapping("statistics/{stockcode}/{limit}")
     public List<StockDetailStatistics> getStockDetailStatisticsList(@PathVariable String stockcode, @PathVariable int limit) {
-//        String uuid = timeCounterService.createTimeCounter("getStockDetailStatisticsList", "股票:" + stockcode + " 數量:" + limit);
-//        StopWatch stopWatch = new StopWatch();
-//        stopWatch.start();
         List<StockDetailStatistics> resultList = stockStatisticsService.getStockcodeStatisticsList(stockcode, limit);
-//        stopWatch.stop();
-//        timeCounterService.addTime(uuid, stopWatch.getTotalTimeSeconds());
         return resultList;
     }
 }
