@@ -20,5 +20,6 @@ public class StockBasicInfo {
     private String industryType;
     private String companyType;
     private String desciption;
+    private LocalDate timeToMarket;
     private LocalDate createdTime;
 }

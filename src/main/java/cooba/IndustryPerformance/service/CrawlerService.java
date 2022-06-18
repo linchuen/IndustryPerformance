@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -223,6 +224,7 @@ public class CrawlerService {
             String industryType = infodoc.selectXpath("//*[@id='main-2-QuoteProfile-Proxy']/div/section[1]/div[2]/div[9]/div/div").text();
             String name = infodoc.selectXpath("//*[@id='main-2-QuoteProfile-Proxy']/div/section[1]/div[2]/div[1]/div/div").text();
             String desciption = infodoc.selectXpath("//*[@id='main-2-QuoteProfile-Proxy']/div/section[1]/div[3]/div").text();
+            String timeToMarket = infodoc.selectXpath("//*[@id='main-2-QuoteProfile-Proxy']/div/section[1]/div[2]/div[7]/div/div").text();
 
             StockBasicInfo stockBasicInfo = StockBasicInfo.builder()
                     .stockcode(stockcode)
@@ -231,6 +233,7 @@ public class CrawlerService {
                     .companyType(companyType)
                     .desciption(desciption)
                     .createdTime(LocalDate.now())
+                    .timeToMarket(LocalDate.parse(timeToMarket, DateTimeFormatter.ofPattern("yyyy/MM/dd")))
                     .build();
 
             redisUtility.valueObjectSet(RedisConstant.STOCKBASICINFO + stockcode, stockBasicInfo);
@@ -253,6 +256,7 @@ public class CrawlerService {
             String industryType = infotable.select("tbody > tr:nth-child(3) > td:nth-child(2)").text();
             String companyType = infotable.select(" tbody > tr:nth-child(4) > td:nth-child(2) > nobr").text();
             String desciption = infotable.select(" tbody > tr:nth-child(15) > td > p").text();
+            String timeToMarket = infotable.select("tbody > tr:nth-child(7) > td:nth-child(2)").text().substring(0, 10);
             Element table = doc.getElementsByClass("b1 p4_2 r10").get(0);
             String name = "";
             try {
@@ -267,6 +271,7 @@ public class CrawlerService {
                     .industryType(industryType)
                     .companyType(companyType)
                     .desciption(desciption)
+                    .timeToMarket(LocalDate.parse(timeToMarket, DateTimeFormatter.ofPattern("yyyy/MM/dd")))
                     .createdTime(LocalDate.now())
                     .build();
 
