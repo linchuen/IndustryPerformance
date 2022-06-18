@@ -61,7 +61,7 @@ public class TimeCounterService {
                 try {
                     String uuid = stringBlockingQueueEntry.getKey();
                     BlockingQueue<Double> timeCounter = stringBlockingQueueEntry.getValue();
-                    Double time = timeCounter.poll(5, TimeUnit.MINUTES);
+                    Double time = timeCounter.poll(3, TimeUnit.MINUTES);
                     if (time == null) {
                         TimeCounter result = resultMap.get(uuid);
                         log.info("uuid: {} TimeCounter總夠耗時:{} 儲存db成功", uuid, result.getTotalSeconds());
