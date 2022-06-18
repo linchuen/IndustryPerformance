@@ -276,7 +276,8 @@ public class StockStatisticsService {
     public List<StockDetailStatistics> getStockcodeStatisticsList(String stockcode, Integer year, int month, int limit) {
         LocalDate temp = LocalDate.of(year, month, 1);
         List<StockDetailStatistics> stockDetailStatisticsList = new ArrayList<>();
-        while (stockDetailStatisticsList.size() < limit) {
+        int loopLimit = 0;
+        while (stockDetailStatisticsList.size() < limit && loopLimit < limit / 20) {
             temp = temp.minusMonths(1);
             List<StockStatistics> stockStatisticsList = redisCacheUtility.readStockStatisticsMonthCache(stockcode, temp.getYear(), temp.getMonthValue());
             List<StockDetail> stockDetailList = redisCacheUtility.readStockDetailMonthCache(stockcode, temp.getYear(), temp.getMonthValue());
@@ -296,12 +297,12 @@ public class StockStatisticsService {
                     }
                 }
             }
-            
+
             stockDetailStatisticsList.addAll(stockStatisticsList
                     .stream()
                     .map(StockDetailStatistics::convert)
                     .collect(Collectors.toList()));
-
+            loopLimit += 1;
         }
         List<StockDetailStatistics> resultList = stockDetailStatisticsList.subList(0, limit);
         Collections.reverse(stockDetailStatisticsList.subList(0, limit));
