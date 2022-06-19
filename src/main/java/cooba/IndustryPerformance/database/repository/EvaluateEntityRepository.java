@@ -11,5 +11,7 @@ import java.util.Optional;
 public interface EvaluateEntityRepository extends MongoRepository<EvaluateEntity, String> {
     List<EvaluateEntity> findByStockcode(String stockcode);
 
+    List<EvaluateEntity> findByDateStr(String dateStr);
+
     Optional<EvaluateEntity> findByStockcodeAndDateStr(String stockcode, String dateStr);
 }

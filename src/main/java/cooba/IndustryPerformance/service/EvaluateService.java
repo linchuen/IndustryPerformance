@@ -1,8 +1,11 @@
 package cooba.IndustryPerformance.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import cooba.IndustryPerformance.database.entity.EvaluateEntity.EvaluateEntity;
 import cooba.IndustryPerformance.database.repository.EvaluateEntityRepository;
 import cooba.IndustryPerformance.entity.StockDetailStatistics;
+import cooba.IndustryPerformance.utility.RedisCacheUtility;
+import cooba.IndustryPerformance.utility.RedisUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -14,9 +17,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static cooba.IndustryPerformance.constant.CommonConstant.YM;
+import static cooba.IndustryPerformance.constant.RedisConstant.*;
+import static cooba.IndustryPerformance.service.LocalcacheService.getlistedStockTimeToMarketLessThan1YearList;
 
 @Slf4j
 @Service
@@ -27,8 +33,60 @@ public class EvaluateService {
     EvaluateEntityRepository evaluateEntityRepository;
     @Autowired
     TimeCounterService timeCounterService;
+    @Autowired
+    RedisCacheUtility redisCacheUtility;
+    @Autowired
+    RedisUtility redisUtility;
 
     private final int days = 10;
+    private final int listlength = 100;
+
+    public void evaluateMain(int year, int month) {
+        List<EvaluateEntity> evaluateEntityList = redisCacheUtility.readEvaluateEntityMonthCache(year, month);
+        List<EvaluateEntity> filterOutTimeToMarketLessThan1YearList = evaluateEntityList.stream()
+                .filter(evaluateEntity -> !getlistedStockTimeToMarketLessThan1YearList().contains(evaluateEntity.getStockcode()))
+                .collect(Collectors.toList());
+
+        List<EvaluateEntity> MA5 = filterOutTimeToMarketLessThan1YearList.stream()
+                .sorted((e1, e2) -> {
+                    Double sum1 = e1.getMA5SlopeList().stream().mapToDouble(BigDecimal::doubleValue).sum();
+                    Double sum2 = e2.getMA5SlopeList().stream().mapToDouble(BigDecimal::doubleValue).sum();
+                    return sum2.compareTo(sum1);
+                }).collect(Collectors.toList()).subList(0, listlength);
+        Map<String, List<BigDecimal>> MA5Map = new HashMap<>();
+        MA5.forEach(evaluateEntity -> MA5Map.put(evaluateEntity.getStockcode(), evaluateEntity.getMA5SlopeList()));
+        redisUtility.valueObjectSet(MA5SLOPELIST + year + "_" + month, MA5Map, 40, TimeUnit.DAYS);
+
+        List<EvaluateEntity> MA10 = filterOutTimeToMarketLessThan1YearList.stream()
+                .sorted((e1, e2) -> {
+                    Double sum1 = e1.getMA10SlopeList().stream().mapToDouble(BigDecimal::doubleValue).sum();
+                    Double sum2 = e2.getMA10SlopeList().stream().mapToDouble(BigDecimal::doubleValue).sum();
+                    return sum2.compareTo(sum1);
+                }).collect(Collectors.toList()).subList(0, listlength);
+        Map<String, List<BigDecimal>> MA10Map = new HashMap<>();
+        MA10.forEach(evaluateEntity -> MA10Map.put(evaluateEntity.getStockcode(), evaluateEntity.getMA5SlopeList()));
+        redisUtility.valueObjectSet(MA10SLOPELIST + year + "_" + month, MA10Map, 40, TimeUnit.DAYS);
+
+        List<EvaluateEntity> MA21 = filterOutTimeToMarketLessThan1YearList.stream()
+                .sorted((e1, e2) -> {
+                    Double sum1 = e1.getMA21SlopeList().stream().mapToDouble(BigDecimal::doubleValue).sum();
+                    Double sum2 = e2.getMA21SlopeList().stream().mapToDouble(BigDecimal::doubleValue).sum();
+                    return sum2.compareTo(sum1);
+                }).collect(Collectors.toList()).subList(0, listlength);
+        Map<String, List<BigDecimal>> MA21Map = new HashMap<>();
+        MA21.forEach(evaluateEntity -> MA21Map.put(evaluateEntity.getStockcode(), evaluateEntity.getMA5SlopeList()));
+        redisUtility.valueObjectSet(MA21SLOPELIST + year + "_" + month, MA21Map, 40, TimeUnit.DAYS);
+
+        List<EvaluateEntity> MA62 = filterOutTimeToMarketLessThan1YearList.stream()
+                .sorted((e1, e2) -> {
+                    Double sum1 = e1.getMA62SlopeList().stream().mapToDouble(BigDecimal::doubleValue).sum();
+                    Double sum2 = e2.getMA62SlopeList().stream().mapToDouble(BigDecimal::doubleValue).sum();
+                    return sum2.compareTo(sum1);
+                }).collect(Collectors.toList()).subList(0, listlength);
+        Map<String, List<BigDecimal>> MA62Map = new HashMap<>();
+        MA62.forEach(evaluateEntity -> MA62Map.put(evaluateEntity.getStockcode(), evaluateEntity.getMA5SlopeList()));
+        redisUtility.valueObjectSet(MA62SLOPELIST + year + "_" + month, MA62Map, 40, TimeUnit.DAYS);
+    }
 
     @Async("stockExecutor")
     public void createEvaluateEntityAsync(String uuid, List<StockDetailStatistics> statisticsList, int year, int month, String stockcode) {
@@ -205,5 +263,15 @@ public class EvaluateService {
         }
         resultList.add(sd.setScale(2, RoundingMode.HALF_UP));
         return resultList;
+    }
+
+    public EvaluateEntity readStockEvaluateEntity(String stockcode, String dateStr) {
+        return evaluateEntityRepository.findByStockcodeAndDateStr(stockcode, dateStr).orElse(new EvaluateEntity());
+    }
+
+    public void getEvaluateMainList(int year, int month) {
+        Map<String, List<BigDecimal>> MA5Map = (Map<String, List<BigDecimal>>) redisUtility.valueObjectGet(MA5SLOPELIST + year + "_" + month, new TypeReference<Map<String, List<BigDecimal>>>() {
+        });
+        System.out.println(MA5Map);
     }
 }

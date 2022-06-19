@@ -3,6 +3,7 @@ package cooba.IndustryPerformance.service;
 import cooba.IndustryPerformance.database.entity.Industry.Industry;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.entity.SkipDate.SkipDate;
+import cooba.IndustryPerformance.database.entity.StockBasicInfo.StockBasicInfo;
 import cooba.IndustryPerformance.database.repository.IndustryRepository;
 import cooba.IndustryPerformance.database.repository.SkipDateRepository;
 import cooba.IndustryPerformance.database.repository.StockBasicInfoRepository;
@@ -36,6 +37,8 @@ public class LocalcacheService {
     public static Set<String> stockcodeLock = new HashSet<>();
     public static List<LocalDate> skipDateList = new ArrayList<>();
     public static Set<String> listedStockList = new HashSet<>();
+    public static Set<String> listedStockTimeToMarketLessThan1YearList = new HashSet<>();
+    ;
 
     @PostConstruct
     public void init() {
@@ -45,7 +48,12 @@ public class LocalcacheService {
         skipDateList = skipDateRepository.findAll().stream().map(SkipDate::getSkipDate).collect(Collectors.toList());
         listedStockList = stockBasicInfoRepository.findByCompanyType(LISTED)
                 .stream()
-                .map(stockBasicInfo -> stockBasicInfo.getStockcode())
+                .map(StockBasicInfo::getStockcode)
+                .collect(Collectors.toSet());
+        listedStockTimeToMarketLessThan1YearList = stockBasicInfoRepository.findByTimeToMarketGreaterThan(LocalDate.now().minusYears(1))
+                .stream()
+                .filter(stockBasicInfo -> stockBasicInfo.getCompanyType().equals(LISTED))
+                .map(StockBasicInfo::getStockcode)
                 .collect(Collectors.toSet());
     }
 
@@ -76,6 +84,10 @@ public class LocalcacheService {
 
     public static Set<String> getListedStockList() {
         return listedStockList;
+    }
+
+    public static Set<String> getlistedStockTimeToMarketLessThan1YearList() {
+        return listedStockTimeToMarketLessThan1YearList;
     }
 
     public void updateStockcodeLockMap() {

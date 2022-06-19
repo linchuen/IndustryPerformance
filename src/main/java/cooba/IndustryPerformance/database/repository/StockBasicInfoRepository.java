@@ -4,6 +4,7 @@ import cooba.IndustryPerformance.database.entity.StockBasicInfo.StockBasicInfo;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,4 +13,6 @@ public interface StockBasicInfoRepository extends MongoRepository<StockBasicInfo
     Optional<StockBasicInfo> findByStockcode(String stockcode);
 
     List<StockBasicInfo> findByCompanyType(String companyType);
+
+    List<StockBasicInfo> findByTimeToMarketGreaterThan(LocalDate date);
 }

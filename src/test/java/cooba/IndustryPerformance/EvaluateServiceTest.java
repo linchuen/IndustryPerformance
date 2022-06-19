@@ -16,9 +16,19 @@ public class EvaluateServiceTest {
     ObjectMapper objectMapper;
 
     @Test
-    public void evaluateMain() throws JsonProcessingException {
+    public void createEvaluateEntity() throws JsonProcessingException {
         EvaluateEntity evaluateEntity = evaluateService.createEvaluateEntity(null, 2022, 6, "3698");
         String json = objectMapper.writeValueAsString(evaluateEntity);
         System.out.println(json);
+    }
+
+    @Test
+    public void evaluateMain() throws JsonProcessingException {
+        evaluateService.evaluateMain(2022, 6);
+    }
+
+    @Test
+    public void getEvaluateMainList() throws JsonProcessingException {
+        evaluateService.getEvaluateMainList(2022, 6);
     }
 }
