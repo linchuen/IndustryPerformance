@@ -1,7 +1,9 @@
 package cooba.IndustryPerformance.utility;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import cooba.IndustryPerformance.constant.RedisConstant;
 import cooba.IndustryPerformance.database.entity.EvaluateEntity.EvaluateEntity;
+import cooba.IndustryPerformance.database.entity.StockBasicInfo.StockBasicInfo;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
 import cooba.IndustryPerformance.database.entity.StockStatistics.StockStatistics;
 import cooba.IndustryPerformance.database.repository.EvaluateEntityRepository;
@@ -90,5 +92,9 @@ public class RedisCacheUtility {
             evaluateEntityList = createEvaluateEntityMonthCache(year, month);
         }
         return evaluateEntityList;
+    }
+
+    public StockBasicInfo readStockBasicInfoCache(String stockcode) {
+        return (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
     }
 }

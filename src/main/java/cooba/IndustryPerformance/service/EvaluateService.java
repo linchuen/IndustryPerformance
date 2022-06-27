@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import cooba.IndustryPerformance.database.entity.EvaluateEntity.EvaluateEntity;
 import cooba.IndustryPerformance.database.repository.EvaluateEntityRepository;
 import cooba.IndustryPerformance.entity.StockDetailStatistics;
+import cooba.IndustryPerformance.entity.StockTopRankEntity;
 import cooba.IndustryPerformance.utility.RedisCacheUtility;
 import cooba.IndustryPerformance.utility.RedisUtility;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -53,8 +55,15 @@ public class EvaluateService {
                     Double sum2 = e2.getMA5SlopeList().stream().mapToDouble(BigDecimal::doubleValue).sum();
                     return sum2.compareTo(sum1);
                 }).collect(Collectors.toList()).subList(0, listlength);
-        Map<String, List<BigDecimal>> MA5Map = new HashMap<>();
-        MA5.forEach(evaluateEntity -> MA5Map.put(evaluateEntity.getStockcode(), evaluateEntity.getMA5SlopeList()));
+        Map<String, StockTopRankEntity> MA5Map = new ConcurrentHashMap<>();
+        MA5.forEach(evaluateEntity -> {
+            String stockcode = evaluateEntity.getStockcode();
+            StockTopRankEntity stockTopRankEntity = StockTopRankEntity.convert(stockcode,
+                    evaluateEntity.getMA5SlopeList(),
+                    evaluateEntity,
+                    redisCacheUtility.readStockBasicInfoCache(stockcode));
+            MA5Map.put(stockcode, stockTopRankEntity);
+        });
         redisUtility.valueObjectSet(MA5SLOPELIST + year + "_" + month, MA5Map, 40, TimeUnit.DAYS);
 
         List<EvaluateEntity> MA10 = filterOutTimeToMarketLessThan1YearList.stream()
@@ -63,8 +72,15 @@ public class EvaluateService {
                     Double sum2 = e2.getMA10SlopeList().stream().mapToDouble(BigDecimal::doubleValue).sum();
                     return sum2.compareTo(sum1);
                 }).collect(Collectors.toList()).subList(0, listlength);
-        Map<String, List<BigDecimal>> MA10Map = new HashMap<>();
-        MA10.forEach(evaluateEntity -> MA10Map.put(evaluateEntity.getStockcode(), evaluateEntity.getMA5SlopeList()));
+        Map<String, StockTopRankEntity> MA10Map = new ConcurrentHashMap<>();
+        MA10.forEach(evaluateEntity -> {
+            String stockcode = evaluateEntity.getStockcode();
+            StockTopRankEntity stockTopRankEntity = StockTopRankEntity.convert(stockcode,
+                    evaluateEntity.getMA10SlopeList(),
+                    evaluateEntity,
+                    redisCacheUtility.readStockBasicInfoCache(stockcode));
+            MA10Map.put(stockcode, stockTopRankEntity);
+        });
         redisUtility.valueObjectSet(MA10SLOPELIST + year + "_" + month, MA10Map, 40, TimeUnit.DAYS);
 
         List<EvaluateEntity> MA21 = filterOutTimeToMarketLessThan1YearList.stream()
@@ -73,8 +89,15 @@ public class EvaluateService {
                     Double sum2 = e2.getMA21SlopeList().stream().mapToDouble(BigDecimal::doubleValue).sum();
                     return sum2.compareTo(sum1);
                 }).collect(Collectors.toList()).subList(0, listlength);
-        Map<String, List<BigDecimal>> MA21Map = new HashMap<>();
-        MA21.forEach(evaluateEntity -> MA21Map.put(evaluateEntity.getStockcode(), evaluateEntity.getMA5SlopeList()));
+        Map<String, StockTopRankEntity> MA21Map = new ConcurrentHashMap<>();
+        MA21.forEach(evaluateEntity -> {
+            String stockcode = evaluateEntity.getStockcode();
+            StockTopRankEntity stockTopRankEntity = StockTopRankEntity.convert(stockcode,
+                    evaluateEntity.getMA21SlopeList(),
+                    evaluateEntity,
+                    redisCacheUtility.readStockBasicInfoCache(stockcode));
+            MA21Map.put(stockcode, stockTopRankEntity);
+        });
         redisUtility.valueObjectSet(MA21SLOPELIST + year + "_" + month, MA21Map, 40, TimeUnit.DAYS);
 
         List<EvaluateEntity> MA62 = filterOutTimeToMarketLessThan1YearList.stream()
@@ -83,8 +106,15 @@ public class EvaluateService {
                     Double sum2 = e2.getMA62SlopeList().stream().mapToDouble(BigDecimal::doubleValue).sum();
                     return sum2.compareTo(sum1);
                 }).collect(Collectors.toList()).subList(0, listlength);
-        Map<String, List<BigDecimal>> MA62Map = new HashMap<>();
-        MA62.forEach(evaluateEntity -> MA62Map.put(evaluateEntity.getStockcode(), evaluateEntity.getMA5SlopeList()));
+        Map<String, StockTopRankEntity> MA62Map = new ConcurrentHashMap<>();
+        MA62.forEach(evaluateEntity -> {
+            String stockcode = evaluateEntity.getStockcode();
+            StockTopRankEntity stockTopRankEntity = StockTopRankEntity.convert(stockcode,
+                    evaluateEntity.getMA62SlopeList(),
+                    evaluateEntity,
+                    redisCacheUtility.readStockBasicInfoCache(stockcode));
+            MA62Map.put(stockcode, stockTopRankEntity);
+        });
         redisUtility.valueObjectSet(MA62SLOPELIST + year + "_" + month, MA62Map, 40, TimeUnit.DAYS);
     }
 
@@ -182,9 +212,9 @@ public class EvaluateService {
             MA10AboveMA21 = statistics.get平均10日成本().compareTo(statistics.get平均21日成本()) > 0 ? MA10AboveMA21 + 1 : MA10AboveMA21;
             MA21AboveMA62 = statistics.get平均21日成本().compareTo(statistics.get平均62日成本()) > 0 ? MA21AboveMA62 + 1 : MA21AboveMA62;
         }
-        evaluateEntity.setMA5AboveMA10(MA5AboveMA10 > statisticsList.size() * 0.8);
-        evaluateEntity.setMA10AboveMA21(MA10AboveMA21 > statisticsList.size() * 0.8);
-        evaluateEntity.setMA21AboveMA62(MA21AboveMA62 > statisticsList.size() * 0.8);
+        evaluateEntity.setMA5AboveMA10(MA5AboveMA10 > statisticsList.size() * 0.6);
+        evaluateEntity.setMA10AboveMA21(MA10AboveMA21 > statisticsList.size() * 0.6);
+        evaluateEntity.setMA21AboveMA62(MA21AboveMA62 > statisticsList.size() * 0.6);
         log.info("完成簡單評估平均成本線 股票: {}", stockcode);
     }
 
@@ -269,9 +299,33 @@ public class EvaluateService {
         return evaluateEntityRepository.findByStockcodeAndDateStr(stockcode, dateStr).orElse(new EvaluateEntity());
     }
 
-    public void getEvaluateMainList(int year, int month) {
-        Map<String, List<BigDecimal>> MA5Map = (Map<String, List<BigDecimal>>) redisUtility.valueObjectGet(MA5SLOPELIST + year + "_" + month, new TypeReference<Map<String, List<BigDecimal>>>() {
+    public List<Map<String, StockTopRankEntity>> getEvaluateMainList(int year, int month) {
+        Map<String, StockTopRankEntity> MA5Map = (Map<String, StockTopRankEntity>) redisUtility.valueObjectGet(MA5SLOPELIST + year + "_" + month, new TypeReference<Map<String, StockTopRankEntity>>() {
         });
-        System.out.println(MA5Map);
+        Map<String, StockTopRankEntity> MA10Map = (Map<String, StockTopRankEntity>) redisUtility.valueObjectGet(MA10SLOPELIST + year + "_" + month, new TypeReference<Map<String, StockTopRankEntity>>() {
+        });
+        Map<String, StockTopRankEntity> MA21Map = (Map<String, StockTopRankEntity>) redisUtility.valueObjectGet(MA21SLOPELIST + year + "_" + month, new TypeReference<Map<String, StockTopRankEntity>>() {
+        });
+        Map<String, StockTopRankEntity> MA62Map = (Map<String, StockTopRankEntity>) redisUtility.valueObjectGet(MA62SLOPELIST + year + "_" + month, new TypeReference<Map<String, StockTopRankEntity>>() {
+        });
+        List<Map<String, StockTopRankEntity>> resultList = new ArrayList<>();
+        resultList.add(MA5Map);
+        resultList.add(MA10Map);
+        resultList.add(MA21Map);
+        resultList.add(MA62Map);
+
+        Set<String> MA5Set = MA5Map.keySet();
+        Set<String> MA10Set = MA10Map.keySet();
+        Set<String> MA21Set = MA21Map.keySet();
+        Set<String> MA62Set = MA62Map.keySet();
+        Set<String> resultSet = new HashSet<>(MA5Set);
+        resultSet.retainAll(MA10Set);
+        resultSet.retainAll(MA21Set);
+        resultSet.retainAll(MA62Set);
+        Map<String, StockTopRankEntity> intersectionMap = resultSet.stream()
+                .collect(Collectors.toMap((stockcode -> stockcode),
+                        (stockcode -> StockTopRankEntity.builder().stockcode(stockcode).build())));
+        resultList.add(intersectionMap);
+        return resultList;
     }
 }

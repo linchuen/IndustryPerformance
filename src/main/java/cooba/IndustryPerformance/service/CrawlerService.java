@@ -5,6 +5,7 @@ import cooba.IndustryPerformance.database.entity.Industry.Stock;
 import cooba.IndustryPerformance.database.entity.Industry.SubIndustry;
 import cooba.IndustryPerformance.database.entity.StockBasicInfo.StockBasicInfo;
 import cooba.IndustryPerformance.database.entity.StockDetail.StockDetail;
+import cooba.IndustryPerformance.utility.RedisCacheUtility;
 import cooba.IndustryPerformance.utility.RedisUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -28,6 +29,8 @@ import java.util.concurrent.TimeUnit;
 public class CrawlerService {
     @Autowired
     RedisUtility redisUtility;
+    @Autowired
+    RedisCacheUtility redisCacheUtility;
 
     private static final Integer WAITTIME = 2000;
     private static final String UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36";
@@ -122,7 +125,7 @@ public class CrawlerService {
 
     public StockDetail crawlYahooSourceStock(String stockcode) {
         try {
-            StockBasicInfo stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
+            StockBasicInfo stockBasicInfo = redisCacheUtility.readStockBasicInfoCache(stockcode);
             stockBasicInfo = stockBasicInfo == null ? crawlStockBasicInfo(stockcode) : stockBasicInfo;
             if (stockBasicInfo == null) {
                 log.warn("{}股票不存在", stockcode);
@@ -166,7 +169,7 @@ public class CrawlerService {
 
     public StockDetail crawlAnueSourceStock(String stockcode) {
         try {
-            StockBasicInfo stockBasicInfo = (StockBasicInfo) redisUtility.valueObjectGet(RedisConstant.STOCKBASICINFO + stockcode, StockBasicInfo.class);
+            StockBasicInfo stockBasicInfo = redisCacheUtility.readStockBasicInfoCache(stockcode);
             stockBasicInfo = stockBasicInfo == null ? crawlStockBasicInfo(stockcode) : stockBasicInfo;
             if (stockBasicInfo == null) {
                 log.warn("{}股票不存在", stockcode);
