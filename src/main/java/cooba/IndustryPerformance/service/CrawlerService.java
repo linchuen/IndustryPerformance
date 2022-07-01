@@ -100,6 +100,7 @@ public class CrawlerService {
             String highest = table.select("tbody > tr:nth-child(3) > td:nth-child(7)").text();
             String lowest = table.select("tbody > tr:nth-child(3) > td:nth-child(8)").text();
             String tradingVolume = table.select(" tbody > tr:nth-child(5) > td:nth-child(3)").text().replace(",", "");
+            String createdTime = LocalDate.now().getYear() + "/" + table.select("tbody > tr > td:nth-child(5) > nobr").text().split(" ")[1];
 
             StockDetail stock = StockDetail.builder()
                     .stockcode(stockcode)
@@ -112,7 +113,7 @@ public class CrawlerService {
                     .highest(new BigDecimal(highest))
                     .lowest(new BigDecimal(lowest))
                     .tradingVolume(Integer.parseInt(tradingVolume))
-                    .createdTime(LocalDate.now())
+                    .createdTime(LocalDate.parse(createdTime, DateTimeFormatter.ofPattern("yyyy/MM/dd")))
                     .build();
             log.info("爬蟲 GoodInfo {} {} 成功", stockcode, name);
             Thread.sleep(WAITTIME);
@@ -137,6 +138,7 @@ public class CrawlerService {
                     .userAgent(UA)
                     .referrer("http://www.google.com")
                     .get();
+            String createdTime = doc.select("#qsp-overview-realtime-info > div:nth-child(1) > span > time > span:nth-child(2)").text().split(" ")[0];
             Element table = doc.select("#qsp-overview-realtime-info > div:nth-child(2) > div > div > ul").get(0);
             String price = table.select("li:nth-child(1) > span:nth-child(2)").text();
             String lastprice = table.select("li:nth-child(7) > span:nth-child(2)").text();
@@ -156,7 +158,7 @@ public class CrawlerService {
                     .highest(new BigDecimal(highest))
                     .lowest(new BigDecimal(lowest))
                     .tradingVolume(Integer.parseInt(tradingVolume))
-                    .createdTime(LocalDate.now())
+                    .createdTime(LocalDate.parse(createdTime, DateTimeFormatter.ofPattern("yyyy/MM/dd")))
                     .build();
             log.info("爬蟲 Yahoo {} {} 成功", stockcode, stockBasicInfo.getName());
             Thread.sleep(WAITTIME);
@@ -187,6 +189,7 @@ public class CrawlerService {
             String highest = doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[2]/div[2]/div/div[2]/div[2]", stockcode)).text().split("- ")[1];
             String lowest = doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[2]/div[2]/div/div[2]/div[2]", stockcode)).text().split("- ")[0];
             String tradingVolume = doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[2]/div[2]/div/div[1]/div[2]", stockcode)).text().replaceAll("[, 張]", "");
+            String createdTime = LocalDate.now().getYear() + "/" + doc.selectXpath(String.format("//*[@id='_profile-TWS:%s:STOCK']/div[1]/div[2]/time", stockcode)).text().split(" ")[0];
 
             StockDetail stock = StockDetail.builder()
                     .stockcode(stockcode)
@@ -199,7 +202,7 @@ public class CrawlerService {
                     .highest(new BigDecimal(Float.valueOf(highest)))
                     .lowest(new BigDecimal(Float.valueOf(lowest)))
                     .tradingVolume(Integer.parseInt(tradingVolume))
-                    .createdTime(LocalDate.now())
+                    .createdTime(LocalDate.parse(createdTime, DateTimeFormatter.ofPattern("yyyy/MM/dd")))
                     .build();
             log.info("爬蟲 Anue {} {} 成功", stockcode, stockBasicInfo.getName());
             Thread.sleep(WAITTIME);

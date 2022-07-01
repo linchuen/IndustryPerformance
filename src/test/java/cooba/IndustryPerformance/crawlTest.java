@@ -32,6 +32,11 @@ public class crawlTest {
     }
 
     @Test
+    public void crawlGoodInfoSourceStock() {
+        System.out.println(crawlerService.crawlGoodInfoSourceStock("2330"));
+    }
+
+    @Test
     public void crawlYahooSourceStock() {
         System.out.println(crawlerService.crawlYahooSourceStock("2330"));
     }

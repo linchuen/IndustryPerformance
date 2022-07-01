@@ -45,4 +45,9 @@ public class EvaluateController {
     public List<Map<String, StockTopRankEntity>> getEvaluateMainList(@PathVariable String year, @PathVariable String month) {
         return evaluateService.getEvaluateMainList(Integer.parseInt(year), Integer.parseInt(month));
     }
+
+    @GetMapping("evaluate/main/{year}/{month}")
+    public void evaluateMain(@PathVariable String year, @PathVariable String month) {
+        evaluateService.evaluateMain(Integer.parseInt(year), Integer.parseInt(month));
+    }
 }
