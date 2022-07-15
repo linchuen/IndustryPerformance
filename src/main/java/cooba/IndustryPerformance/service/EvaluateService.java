@@ -48,6 +48,7 @@ public class EvaluateService {
         List<EvaluateEntity> filterOutTimeToMarketLessThan1YearList = evaluateEntityList.stream()
                 .filter(evaluateEntity -> !getlistedStockTimeToMarketLessThan1YearList().contains(evaluateEntity.getStockcode()))
                 .collect(Collectors.toList());
+        log.info("讀取 EvaluateEntity Cache: {}/{}", year, month);
 
         List<EvaluateEntity> MA5 = filterOutTimeToMarketLessThan1YearList.stream()
                 .sorted((e1, e2) -> {
@@ -65,6 +66,7 @@ public class EvaluateService {
             MA5Map.put(stockcode, stockTopRankEntity);
         });
         redisUtility.valueObjectSet(MA5SLOPELIST + year + "_" + month, MA5Map, 40, TimeUnit.DAYS);
+        log.info("寫入MA5 EvaluateEntity Cache: {}/{}", year, month);
 
         List<EvaluateEntity> MA10 = filterOutTimeToMarketLessThan1YearList.stream()
                 .sorted((e1, e2) -> {
@@ -82,6 +84,7 @@ public class EvaluateService {
             MA10Map.put(stockcode, stockTopRankEntity);
         });
         redisUtility.valueObjectSet(MA10SLOPELIST + year + "_" + month, MA10Map, 40, TimeUnit.DAYS);
+        log.info("寫入MA10 EvaluateEntity Cache: {}/{}", year, month);
 
         List<EvaluateEntity> MA21 = filterOutTimeToMarketLessThan1YearList.stream()
                 .sorted((e1, e2) -> {
@@ -99,6 +102,7 @@ public class EvaluateService {
             MA21Map.put(stockcode, stockTopRankEntity);
         });
         redisUtility.valueObjectSet(MA21SLOPELIST + year + "_" + month, MA21Map, 40, TimeUnit.DAYS);
+        log.info("寫入MA21 EvaluateEntity Cache: {}/{}", year, month);
 
         List<EvaluateEntity> MA62 = filterOutTimeToMarketLessThan1YearList.stream()
                 .sorted((e1, e2) -> {
@@ -116,6 +120,7 @@ public class EvaluateService {
             MA62Map.put(stockcode, stockTopRankEntity);
         });
         redisUtility.valueObjectSet(MA62SLOPELIST + year + "_" + month, MA62Map, 40, TimeUnit.DAYS);
+        log.info("寫入MA62 EvaluateEntity Cache: {}/{}", year, month);
     }
 
     @Async("stockExecutor")

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace 對應持久層的介面 -->
+<mapper namespace="cooba.IndustryPerformance.database.mapper.RssMapper">
+    <resultMap type="cooba.IndustryPerformance.database.entity.Rss.Rss" id="rss">
+        <result column="id" property="id"/>
+        <result column="title" property="title"/>
+        <result column="link" property="link"/>
+        <result column="description" property="description"/>
+        <result column="publishedDate" property="publishedDate"/>
+        <result column="categories" property="categories"/>
+    </resultMap>
+
+    <insert id="insertRss" parameterType="cooba.IndustryPerformance.database.entity.Rss.Rss">
+        INSERT INTO
+        Rss( title, link, description, publishedDate, categories )
+        VALUES(#{title}, #{link}, #{description}, #{publishedDate}, #{categories})
+    </insert>
+
+    <select id="findByPublishedDateGreaterThan" resultType="cooba.IndustryPerformance.database.entity.Rss.Rss">
+        SELECT *
+        FROM Rss
+        WHERE publishedDate > #{publishedDate}
+    </select>
+</mapper>

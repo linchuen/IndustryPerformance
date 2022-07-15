@@ -28,12 +28,12 @@ public class EvaluateServiceTest {
 
     @Test
     public void evaluateMain() throws JsonProcessingException {
-        evaluateService.evaluateMain(2022, 6);
+        evaluateService.evaluateMain(2022, 7);
     }
 
     @Test
     public void getEvaluateMainList() throws JsonProcessingException {
-        List<Map<String, StockTopRankEntity>> list = evaluateService.getEvaluateMainList(2022, 6);
+        List<Map<String, StockTopRankEntity>> list = evaluateService.getEvaluateMainList(2022, 7);
         list.forEach(stringListMap -> stringListMap.entrySet().forEach(System.out::println));
     }
 }
